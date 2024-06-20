@@ -1,13 +1,3 @@
-// **********************************************************************
-// PUCRS/Escola Polit�cnica
-// COMPUTA��O GR�FICA
-//
-// Programa b�sico para criar aplicacoes 3D em OpenGL
-//
-// Marcio Sarroglia Pinho
-// pinho@pucrs.br
-// **********************************************************************
-
 #include <iostream>
 #include <cmath>
 #include <ctime>
@@ -79,7 +69,7 @@ void init(void)
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     else
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    OBS = Ponto(0, 4, 10);
+    OBS = Ponto(0, 5, 10);
     ALVO = Ponto(0,0,0);
     VetorAlvo = ALVO - OBS;
 
@@ -382,9 +372,9 @@ void display( void )
 	glPopMatrix();
     
 
-    //glColor3f(0.8,0.8,0);
-    //glutSolidTeapot(2);
-    //DesenhaParedao();
+    // glColor3f(0.8,0.8,0);
+    // glutSolidTeapot(2);
+    // DesenhaParedao();
     
 
 	glutSwapBuffers();
