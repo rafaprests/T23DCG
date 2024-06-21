@@ -35,6 +35,8 @@ using namespace std;
 #define PLAYER_START 4
 #define GAS 5
 #define ENEMY 6
+#define CHAIR 7
+#define TABLE 8
 
 std::vector<std::vector<int>> mapa;
 
@@ -252,7 +254,92 @@ void DesenhaInimigo(float x, float y, float z)
     glPopMatrix();
 }
 
+void DesenhaCadeira(float x, float y, float z) {
+    glPushMatrix();
+    glTranslatef(x, y, z);
 
+    // Assento
+    defineCor(Brown);
+    glPushMatrix();
+    glTranslatef(0, 0.25, 0);
+    glScalef(0.4, 0.05, 0.4);
+    glutSolidCube(1);
+    glPopMatrix();
+
+    // Encosto
+    glPushMatrix();
+    glTranslatef(0, 0.5, -0.175);
+    glScalef(0.4, 0.4, 0.05);
+    glutSolidCube(1);
+    glPopMatrix();
+
+    // Pernas
+    glPushMatrix();
+    glTranslatef(0.175, 0.125, 0.175);
+    glScalef(0.05, 0.25, 0.05);
+    glutSolidCube(1);
+    glPopMatrix();
+
+    glPushMatrix();
+    glTranslatef(-0.175, 0.125, 0.175);
+    glScalef(0.05, 0.25, 0.05);
+    glutSolidCube(1);
+    glPopMatrix();
+
+    glPushMatrix();
+    glTranslatef(0.175, 0.125, -0.175);
+    glScalef(0.05, 0.25, 0.05);
+    glutSolidCube(1);
+    glPopMatrix();
+
+    glPushMatrix();
+    glTranslatef(-0.175, 0.125, -0.175);
+    glScalef(0.05, 0.25, 0.05);
+    glutSolidCube(1);
+    glPopMatrix();
+
+    glPopMatrix();
+}
+
+void DesenhaMesa(float x, float y, float z) {
+    glPushMatrix();
+    glTranslatef(x, y, z);
+
+    // Tampo da mesa
+    defineCor(Brown);
+    glPushMatrix();
+    glTranslatef(0, 0.4, 0);
+    glScalef(0.8, 0.05, 0.8);
+    glutSolidCube(1);
+    glPopMatrix();
+
+    // Pernas da mesa
+    glPushMatrix();
+    glTranslatef(0.35, 0.2, 0.35);
+    glScalef(0.05, 0.4, 0.05);
+    glutSolidCube(1);
+    glPopMatrix();
+
+    glPushMatrix();
+    glTranslatef(-0.35, 0.2, 0.35);
+    glScalef(0.05, 0.4, 0.05);
+    glutSolidCube(1);
+    glPopMatrix();
+
+    glPushMatrix();
+    glTranslatef(0.35, 0.2, -0.35);
+    glScalef(0.05, 0.4, 0.05);
+    glutSolidCube(1);
+    glPopMatrix();
+
+    glPushMatrix();
+    glTranslatef(-0.35, 0.2, -0.35);
+    glScalef(0.05, 0.4, 0.05);
+    glutSolidCube(1);
+    glPopMatrix();
+
+    glPopMatrix();
+}
 
 void DesenhaLabirinto()
 {
@@ -295,6 +382,14 @@ void DesenhaLabirinto()
                 DesenhaPiso(x,0,z);
                 DesenhaInimigo(x,0,z);
                 break;
+            case CHAIR:
+                DesenhaPiso(x,0,z);
+                DesenhaCadeira(x,0,z);
+                break;
+            case TABLE:
+                DesenhaPiso(x,0,z);
+                DesenhaMesa(x,0,z);
+                break;
             }
         }
     }
@@ -306,28 +401,73 @@ void AtualizaPosicaoJogador()
     double rad = jogadorRotacao * M_PI / 180.0;
     if (andando)
     {
-         // Calcula a próxima posição do jogador
+        // Calcula a próxima posição do jogador
         double nextX = jogador.x + jogadorVelocidade * cos(rad);
         double nextZ = jogador.z + jogadorVelocidade * sin(rad);
 
-        // Verifica se a próxima posição não é uma parede (WALL)
-        int cellX = static_cast<int>(nextX);
-        int cellZ = static_cast<int>(nextZ);
-        
-        if (mapa[cellZ][cellX] != WALL)
+        // Verifica se a próxima posição não está em colisão
+        bool colisao = false;
+
+        // Verifica as 4 arestas do quadrado ao redor da nova posição
+        for (double dx = -0.5; dx <= 0.5; dx += 1.0)
         {
-            // Se não for parede, atualiza a posição do jogador
+            for (double dz = -0.5; dz <= 0.5; dz += 1.0)
+            {
+                int cellX = static_cast<int>(nextX + dx);
+                int cellZ = static_cast<int>(nextZ + dz);
+
+                // Verifica se está fora dos limites do mapa
+                if (cellX < 0 || cellX >= mapa[0].size() || cellZ < 0 || cellZ >= mapa.size())
+                {
+                    colisao = true;
+                    break;
+                }
+
+                // Verifica se a célula é uma parede ou outro obstáculo
+                if (mapa[cellZ][cellX] == WALL || mapa[cellZ][cellX] == DOOR || mapa[cellZ][cellX] == WINDOW 
+                    || mapa[cellZ][cellX] == CHAIR || mapa[cellZ][cellX] == TABLE)
+                {
+                    colisao = true;
+                    break;
+                }
+            }
+            if (colisao) break;
+        }
+
+        if (!colisao)
+        {
+            // Se não houver colisão, atualiza a posição do jogador
             jogador.x = nextX;
             jogador.z = nextZ;
+
+            // Verifica colisão com cápsula de energia (GAS)
+            int cellX = static_cast<int>(nextX);
+            int cellZ = static_cast<int>(nextZ);
+            if (mapa[cellZ][cellX] == GAS)
+            {
+                // Reabastece energia (pode ser uma variável que você define)
+                // energia += valor_de_reabastecimento;
+
+                // Move a cápsula de energia para um local aleatório
+                mapa[cellZ][cellX] = CORRIDOR; // Remove a cápsula da posição atual
+                int newGasX, newGasZ;
+                do {
+                    newGasX = rand() % mapa[0].size();
+                    newGasZ = rand() % mapa.size();
+                } while (mapa[newGasZ][newGasX] != CORRIDOR);
+
+                mapa[newGasZ][newGasX] = GAS; // Coloca a cápsula na nova posição
+            }
         }
     }
+
     // Atualizar o vetor alvo de acordo com a nova direção do jogador
     VetorAlvo.x = cos(rad);
     VetorAlvo.z = sin(rad);
     VetorAlvo.y = 0; // Manter o alvo no plano 
-
-    // Implementar colisões e outras interações
 }
+
+
 
 void DesenhaJogador()
 {
@@ -636,8 +776,9 @@ int main(int argc, char **argv)
     glutInitWindowSize(700, 700);
     glutCreateWindow("Computacao Grafica - Exemplo Basico 3D");
 
-    LeMapa("mapa.txt");
     init();
+
+    LeMapa("mapa.txt");
 
     glutDisplayFunc(display);
     glutReshapeFunc(reshape);

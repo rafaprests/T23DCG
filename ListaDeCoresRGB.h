@@ -121,7 +121,7 @@ enum {
     Light_Purple,
     Very_Light_Purple,
     Black,
-    White
+    White,
 };
 
 
