@@ -192,6 +192,68 @@ void DesenhaCombustivel(float x, float y, float z)
     glPopMatrix();
 }
 
+void DesenhaJanela(float x, float y, float z)
+{
+    float altura = 1.8;
+    glPushMatrix();
+    defineCor(LightBlue);
+    glTranslatef(x, y, z);
+
+    glTranslatef(0, altura/2 + 0.9 , 0); 
+    glScalef(1, altura, 0.25); 
+
+    glutSolidCube(1);
+
+    // Adiciona borda preta
+    glColor3f(0, 0, 0);
+    glScalef(1.01, 1.01, 1.01); // Ligeiramente maior para desenhar a borda
+    glutWireCube(1);
+
+    glPopMatrix();
+}
+
+void DesenhaPorta(float x, float y, float z)
+{
+    float altura = 2.1;
+    glPushMatrix();
+    defineCor(Bronze);
+    glTranslatef(x, y, z);
+
+    glTranslatef(0, altura/2 , 0); 
+    glScalef(1, altura, 0.25); 
+
+    glutSolidCube(1);
+
+    // Adiciona borda preta
+    glColor3f(0, 0, 0);
+    glScalef(1.01, 1.01, 1.01); // Ligeiramente maior para desenhar a borda
+    glutWireCube(1);
+
+    glPopMatrix();
+}
+
+void DesenhaInimigo(float x, float y, float z)
+{
+    float altura = 2.0;
+    glPushMatrix();
+    defineCor(Black);
+    glTranslatef(x, y, z);
+
+    glTranslatef(0, altura/2 , 0); 
+    glScalef(0.4, altura, 0.25); 
+
+    glutSolidCube(1);
+
+    // Adiciona borda preta
+    glColor3f(0, 0, 0);
+    glScalef(1.01, 1.01, 1.01); // Ligeiramente maior para desenhar a borda
+    glutWireCube(1);
+
+    glPopMatrix();
+}
+
+
+
 void DesenhaLabirinto()
 {
     for (size_t i = 0; i < mapa.size(); ++i)
@@ -207,13 +269,16 @@ void DesenhaLabirinto()
                 DesenhaPiso(x,0,z);
                 break;
             case WALL:
-                DesenhaParede(x, 0, z); // parede com 2.7m de altura e 0.25m de espessura
+                DesenhaPiso(x,0,z);
+                DesenhaParede(x, 0, z); 
                 break;
             case WINDOW:
-                //DesenhaParede(x, 0, z); // parede com 2.7m de altura e 0.25m de espessura
+                DesenhaPiso(x,0,z);
+                DesenhaJanela(x, 0, z);
                 break;
             case DOOR:
-                //DesenhaParede(x, 0, z); // parede com 2.7m de altura e 0.25m de espessura
+                DesenhaPiso(x,0,z);
+                DesenhaPorta(x, 0, z);
                 break;
             case PLAYER_START:
                 mapa[i][j] = CORRIDOR;
@@ -227,6 +292,8 @@ void DesenhaLabirinto()
                 DesenhaCombustivel(x,0,z);
                 break;
             case ENEMY:
+                DesenhaPiso(x,0,z);
+                DesenhaInimigo(x,0,z);
                 break;
             }
         }
@@ -258,7 +325,7 @@ void AtualizaPosicaoJogador()
     VetorAlvo.x = cos(rad);
     VetorAlvo.z = sin(rad);
     VetorAlvo.y = 0; // Manter o alvo no plano 
-    
+
     // Implementar colisões e outras interações
 }
 
@@ -272,31 +339,28 @@ void DesenhaJogador()
     glPopMatrix();
 }
 
-// **********************************************************************
-//  void init(void)
-//        Inicializa os parametros globais de OpenGL
-// **********************************************************************
 void init(void)
 {
     glClearColor(1.0f, 1.0f, 0.0f, 1.0f); // Fundo de tela preto
-    
-    glClearDepth(1.0);
-    glDepthFunc(GL_LESS);
-    // glEnable(GL_DEPTH_TEST);
-    glEnable(GL_CULL_FACE);
-    glEnable(GL_NORMALIZE);
-    // glShadeModel(GL_SMOOTH);
-    glShadeModel(GL_FLAT);
+
+    glEnable(GL_DEPTH_TEST); // Habilita o teste de profundidade
+    glClearDepth(1.0);        // Limpa o valor do Z-buffer para o valor máximo
+    glDepthFunc(GL_LESS);     // Função de teste de profundidade
+    glEnable(GL_CULL_FACE);   // Habilita o culling de faces
+    glEnable(GL_NORMALIZE);   // Normaliza normais para cálculos corretos de iluminação
+    glShadeModel(GL_FLAT);    // Modelo de sombreamento flat para um efeito mais simples
 
     glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
     if (ModoDeExibicao) // Faces Preenchidas??
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     else
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    
     OBS = Ponto(0, 5, 10);
     ALVO = Ponto(0, 0, 0);
     VetorAlvo = ALVO - OBS;
 }
+
 
 void animate()
 {
@@ -485,22 +549,19 @@ void PosicUser()
 
 void reshape(int w, int h)
 {
-
-    // Evita divis�o por zero, no caso de uam janela com largura 0.
+    // Evita divisão por zero, no caso de uma janela com largura 0.
     if (h == 0)
         h = 1;
-    // Ajusta a rela��o entre largura e altura para evitar distor��o na imagem.
-    // Veja fun��o "PosicUser".
+
     AspectRatio = 1.0f * w / h;
-    // Reset the coordinate system before modifying
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
+
     // Seta a viewport para ocupar toda a janela
     glViewport(0, 0, w, h);
-    // cout << "Largura" << w << endl;
 
+    // Define os parâmetros da projeção e ajusta a relação de aspecto
     PosicUser();
 }
+
 
 void display(void)
 {
@@ -515,6 +576,7 @@ void display(void)
 
     glutSwapBuffers();
 }
+
 
 void keyboard(unsigned char key, int x, int y)
 {
