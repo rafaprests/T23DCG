@@ -33,11 +33,17 @@ using namespace std;
 #define WINDOW 2
 #define DOOR 3
 #define PLAYER_START 4
+#define GAS 5
+#define ENEMY 6
 
 std::vector<std::vector<int>> mapa;
 
-Ponto jogador(0, 0, 0);
+Ponto jogador;
 bool andando = false;
+
+double jogadorRotacao = 0.0; // Ângulo de rotação do jogador em graus
+double jogadorVelocidade = 0.1; // Velocidade de movimento do jogador
+
 
 Temporizador T;
 double AccumDeltaT = 0;
@@ -56,9 +62,11 @@ int ModoDeProjecao = 1;
 // pela tecla 'e'
 int ModoDeExibicao = 1;
 
+// 0: Primeira pessoa, 1: Visão de cima
+int ModoDeVisao = 0; 
+
 double nFrames = 0;
 double TempoTotal = 0;
-Ponto CantoEsquerdo = Ponto(-20, 0, -10);
 Ponto OBS;
 Ponto ALVO;
 Ponto VetorAlvo;
@@ -73,9 +81,6 @@ void animate();
 void DesenhaCubo(float tamAresta);
 void DesenhaParalelepipedo();
 void DesenhaLadrilho(int corBorda, int corDentro);
-void DesenhaPiso(float x, float y, float z);
-void DesenhaParedao();
-void DesenhaChao();
 void DefineLuz(void);
 void MygluPerspective(float fieldOfView, float aspect, float zNear, float zFar);
 void PosicUser();
@@ -129,21 +134,61 @@ void LeMapa(const std::string &filename)
 
 void DesenhaParede(float x, float y, float z)
 {
+    float alturaParede = 2.7;
     glPushMatrix();
     defineCor(Copper);
     glTranslatef(x, y, z);
-    glScalef(1, 2.7, 1);
+
+    // Ajuste para desenhar a parede inteira para cima
+    glTranslatef(0, alturaParede/2 , 0); // 1.35 metros para cima
+
+    // Desenha a parede com a altura correta
+    glScalef(1, alturaParede, 0.25); // 2.7 metros de altura e 0.25 metros de espessura
+
     glutSolidCube(1);
+
+    // Adiciona borda preta
+    glColor3f(0, 0, 0);
+    glScalef(1.01, 1.01, 1.01); // Ligeiramente maior para desenhar a borda
+    glutWireCube(1);
+
     glPopMatrix();
 }
+
 
 void DesenhaPiso(float x, float y, float z)
 {
     glPushMatrix();
     defineCor(DarkPurple);
     glTranslatef(x, y, z);
-    glScalef(1, 0.10, 1);
+    glScalef(1, 0, 1);
     glutSolidCube(1);
+
+    // Adiciona borda preta
+    glColor3f(0, 0, 0);
+    glScalef(1.01, 1.01, 1.01); // Ligeiramente maior para desenhar a borda
+    glutWireCube(1);
+
+    glPopMatrix();
+}
+
+void DesenhaCombustivel(float x, float y, float z)
+{
+    float altura = 0.75;
+    glPushMatrix();
+    defineCor(OrangeRed);
+    glTranslatef(x, y, z);
+
+    glTranslatef(0, altura/2 , 0); 
+    glScalef(altura, altura, altura); 
+
+    glutSolidCube(1);
+
+    // Adiciona borda preta
+    glColor3f(0, 0, 0);
+    glScalef(1.01, 1.01, 1.01); // Ligeiramente maior para desenhar a borda
+    glutWireCube(1);
+
     glPopMatrix();
 }
 
@@ -158,17 +203,31 @@ void DesenhaLabirinto()
 
             switch (mapa[i][j])
             {
+            case CORRIDOR:
+                DesenhaPiso(x,0,z);
+                break;
             case WALL:
                 DesenhaParede(x, 0, z); // parede com 2.7m de altura e 0.25m de espessura
                 break;
-            case CORRIDOR:
-                // Desenhar o piso do corredor
-                //glPushMatrix();
-                // glTranslatef(x, 0, z);
-                DesenhaPiso(x,0,z);
-                // glPopMatrix();
+            case WINDOW:
+                //DesenhaParede(x, 0, z); // parede com 2.7m de altura e 0.25m de espessura
                 break;
-                // Adicionar casos para outras estruturas como janelas, portas, etc.
+            case DOOR:
+                //DesenhaParede(x, 0, z); // parede com 2.7m de altura e 0.25m de espessura
+                break;
+            case PLAYER_START:
+                mapa[i][j] = CORRIDOR;
+                DesenhaPiso(x,0,z);
+                jogador.x = x;
+                jogador.y = 0;
+                jogador.z = z;
+                break;
+            case GAS:
+                DesenhaPiso(x,0,z);
+                DesenhaCombustivel(x,0,z);
+                break;
+            case ENEMY:
+                break;
             }
         }
     }
@@ -176,10 +235,30 @@ void DesenhaLabirinto()
 
 void AtualizaPosicaoJogador()
 {
+    // Converter o ângulo de rotação de graus para radianos
+    double rad = jogadorRotacao * M_PI / 180.0;
     if (andando)
     {
-        jogador.x += 0.1; // Atualize com a lógica de movimento correta
+         // Calcula a próxima posição do jogador
+        double nextX = jogador.x + jogadorVelocidade * cos(rad);
+        double nextZ = jogador.z + jogadorVelocidade * sin(rad);
+
+        // Verifica se a próxima posição não é uma parede (WALL)
+        int cellX = static_cast<int>(nextX);
+        int cellZ = static_cast<int>(nextZ);
+        
+        if (mapa[cellZ][cellX] != WALL)
+        {
+            // Se não for parede, atualiza a posição do jogador
+            jogador.x = nextX;
+            jogador.z = nextZ;
+        }
     }
+    // Atualizar o vetor alvo de acordo com a nova direção do jogador
+    VetorAlvo.x = cos(rad);
+    VetorAlvo.z = sin(rad);
+    VetorAlvo.y = 0; // Manter o alvo no plano 
+    
     // Implementar colisões e outras interações
 }
 
@@ -187,10 +266,12 @@ void DesenhaJogador()
 {
     glPushMatrix();
     glTranslatef(jogador.x, jogador.y, jogador.z);
+    glRotatef(jogadorRotacao, 0.0, 1.0, 0.0); // Aplica a rotação do jogador
     glColor3f(1, 0, 0);           // Cor vermelha para o jogador
     glutSolidSphere(0.5, 20, 20); // Desenha o jogador como uma esfera
     glPopMatrix();
 }
+
 // **********************************************************************
 //  void init(void)
 //        Inicializa os parametros globais de OpenGL
@@ -233,9 +314,6 @@ void animate()
     }
 }
 
-// **********************************************************************
-//  void DesenhaCubo()
-// **********************************************************************
 void DesenhaCubo(float tamAresta)
 {
     glBegin(GL_QUADS);
@@ -317,50 +395,6 @@ void DesenhaLadrilho(int corBorda, int corDentro)
     glEnd();
 }
 
-// **********************************************************************
-//
-//
-// **********************************************************************
-// void DesenhaPiso()
-// {
-//     srand(100); // usa uma semente fixa para gerar sempre as mesma cores no piso
-//     glPushMatrix();
-//     glTranslated(CantoEsquerdo.x, CantoEsquerdo.y, CantoEsquerdo.z);
-//     for (int x = -20; x < 20; x++)
-//     {
-//         glPushMatrix();
-//         for (int z = -20; z < 20; z++)
-//         {
-//             DesenhaLadrilho(MediumGoldenrod, rand() % 40);
-//             glTranslated(0, 0, 1);
-//         }
-//         glPopMatrix();
-//         glTranslated(1, 0, 0);
-//     }
-//     glPopMatrix();
-// }
-
-// void DesenhaParedao()
-// {
-//     glPushMatrix();
-//     glRotatef(90, 0, 0, 1);
-//     DesenhaPiso();
-//     glPopMatrix();
-// }
-// void DesenhaChao()
-// {
-//     glPushMatrix();
-//     glTranslated(-20, 0, 0);
-//     DesenhaPiso();
-//     glPopMatrix();
-//     glPushMatrix();
-//     glTranslated(20, 0, 0);
-//     DesenhaPiso();
-//     glPopMatrix();
-// }
-// **********************************************************************
-//  void DefineLuz(void)
-// **********************************************************************
 void DefineLuz(void)
 {
     // Define cores para um objeto dourado
@@ -401,7 +435,6 @@ void DefineLuz(void)
     // concentrado ser� o brilho. (Valores v�lidos: de 0 a 128)
     glMateriali(GL_FRONT, GL_SHININESS, 128);
 }
-// **********************************************************************
 
 void MygluPerspective(float fieldOfView, float aspect, float zNear, float zFar)
 {
@@ -416,9 +449,7 @@ void MygluPerspective(float fieldOfView, float aspect, float zNear, float zFar)
     GLfloat fW = fH * aspect;
     glFrustum(-fW, fW, -fH, fH, zNear, zFar);
 }
-// **********************************************************************
-//  void PosicUser()
-// **********************************************************************
+
 void PosicUser()
 {
 
@@ -438,15 +469,20 @@ void PosicUser()
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    gluLookAt(OBS.x, OBS.y, OBS.z,    // Posi��o do Observador
-              ALVO.x, ALVO.y, ALVO.z, // Posi��o do Alvo
-              0.0, 1.0, 0.0);
+     if (ModoDeVisao == 0) // Primeira pessoa
+    {
+        gluLookAt(jogador.x, jogador.y + 1.5, jogador.z, // Posiçao do observador
+                  jogador.x + VetorAlvo.x, jogador.y + 1.5 + VetorAlvo.y, jogador.z + VetorAlvo.z, // Posiçao do alvo
+                  0.0, 1.0, 0.0);
+    }
+    else if (ModoDeVisao == 1) // Visão de cima
+    {
+        gluLookAt(jogador.x, 20, jogador.z, // Posiçao do observador
+                  jogador.x, 0, jogador.z,  // Posiçao do alvo
+                  0.0, 0.0, -1.0);          // Up vector (direção para baixo)
+    }
 }
-// **********************************************************************
-//  void reshape( int w, int h )
-//		trata o redimensionamento da janela OpenGL
-//
-// **********************************************************************
+
 void reshape(int w, int h)
 {
 
@@ -466,44 +502,6 @@ void reshape(int w, int h)
     PosicUser();
 }
 
-// **********************************************************************
-//  void display( void )
-// **********************************************************************
-float PosicaoZ = -30;
-
-// void display( void )
-// {
-
-// 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-
-// 	DefineLuz();
-
-// 	PosicUser();
-
-// 	glMatrixMode(GL_MODELVIEW);
-
-//     DesenhaChao();
-// 	glPushMatrix();
-// 		glTranslatef ( 4.0f, 3.0f, 0.0f );
-//         //glRotatef(angulo,0,1,0);
-// 		glColor3f(0.5f,0.0f, 0.5f); // Roxo
-//         glScaled(0.5, 1,0.5);
-//         glutSolidCube(2);
-// 	glPopMatrix();
-
-// 	glPushMatrix();
-// 		glTranslatef ( -4.0f, 1.0f, 0.0f );
-// 		glRotatef(angulo,0,1,0);
-// 		glColor3f(0.6156862745, 0.8980392157, 0.9803921569); // Azul claro
-//         glutSolidCube(2);
-// 	glPopMatrix();
-
-//     // glColor3f(0.8,0.8,0);
-//     // glutSolidTeapot(2);
-//     // DesenhaParedao();
-
-// 	glutSwapBuffers();
-// }
 void display(void)
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -518,11 +516,6 @@ void display(void)
     glutSwapBuffers();
 }
 
-// **********************************************************************
-//  void keyboard ( unsigned char key, int x, int y )
-//
-//
-// **********************************************************************
 void keyboard(unsigned char key, int x, int y)
 {
     switch (key)
@@ -542,38 +535,37 @@ void keyboard(unsigned char key, int x, int y)
         init();
         glutPostRedisplay();
         break;
+    case 'v':
+        ModoDeVisao = !ModoDeVisao;
+        glutPostRedisplay();
+        break;
     default:
         cout << key;
         break;
     }
 }
 
-// **********************************************************************
-//  void arrow_keys ( int a_keys, int x, int y )
-//
-//
-// **********************************************************************
 void arrow_keys(int a_keys, int x, int y)
 {
     switch (a_keys)
     {
-    case GLUT_KEY_LEFT: // When Down Arrow Is Pressed...
-        jogador.z += 0.1;
+    case GLUT_KEY_RIGHT:
+        jogadorRotacao += 5.0; // Rotaciona 5 graus para a esquerda
+        if (jogadorRotacao >= 360.0)
+            jogadorRotacao -= 360.0;
         break;
-    case GLUT_KEY_RIGHT: // When Up Arrow Is Pressed...
-        jogador.z -= 0.1;
+    case GLUT_KEY_LEFT:
+        jogadorRotacao -= 5.0; // Rotaciona 5 graus para a direita
+        if (jogadorRotacao < 0.0)
+            jogadorRotacao += 360.0;
         break;
-
     default:
         break;
     }
+    glutPostRedisplay();
 }
 
-// **********************************************************************
-//  void main ( int argc, char** argv )
-//
-//
-// **********************************************************************
+
 int main(int argc, char **argv)
 {
     glutInit(&argc, argv);
@@ -584,7 +576,6 @@ int main(int argc, char **argv)
 
     LeMapa("mapa.txt");
     init();
-    // system("pwd");
 
     glutDisplayFunc(display);
     glutReshapeFunc(reshape);
