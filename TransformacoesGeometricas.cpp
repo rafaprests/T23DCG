@@ -92,6 +92,8 @@ void reshape(int w, int h);
 void display(void);
 void keyboard(unsigned char key, int x, int y);
 void arrow_keys(int a_keys, int x, int y);
+void ColidiuComGas();
+void ColidiuComInimigo();
 
 // Função para ler o mapa do arquivo
 void LeMapa(const std::string &filename)
@@ -391,6 +393,38 @@ void DesenhaLabirinto()
     }
 }
 
+void ColidiuComGas()
+{
+    // Encontra uma posição aleatória válida para o combustível
+    int novoX, novoZ;
+    do {
+        novoX = rand() % mapa[0].size(); // Posição aleatória na largura do mapa
+        novoZ = rand() % mapa.size();   // Posição aleatória na altura do mapa
+    } while (mapa[novoZ][novoX] != CORRIDOR); // Garante que a posição seja um corredor vazio
+
+    // Move o combustível para a nova posição aleatória
+    mapa[novoZ][novoX] = GAS;
+
+    // Aumenta a energia do jogador
+    energia += valor_de_reabastecimento;
+}
+
+void ColidiuComInimigo()
+{
+    // Encontra uma posição aleatória válida para o inimigo
+    int novoX, novoZ;
+    do {
+        novoX = rand() % mapa[0].size(); // Posição aleatória na largura do mapa
+        novoZ = rand() % mapa.size();   // Posição aleatória na altura do mapa
+    } while (mapa[novoZ][novoX] != CORRIDOR); // Garante que a posição seja um corredor vazio
+
+    // Move o inimigo para a nova posição aleatória
+    mapa[novoZ][novoX] = ENEMY;
+
+    // Reduz a energia do jogador (exemplo)
+    energia -= 10; // Ajuste conforme necessário
+}
+
 void AtualizaPosicaoJogador()
 {
     // Calcula a nova posição do jogador baseado na sua rotação e velocidade
@@ -406,8 +440,22 @@ void AtualizaPosicaoJogador()
 
         if (mapa[mapaZ][mapaX] == CORRIDOR || mapa[mapaZ][mapaX] == GAS || mapa[mapaZ][mapaX] == ENEMY) 
         {
-            jogador.x = novoX;
-            jogador.z = novoZ;
+            if (mapa[mapaZ][mapaX] == GAS){
+                ColidiuComGas();
+            }else if (mapa[mapaZ][mapaX] == ENEMY)
+            {
+                ColidiuComInimigo();
+            }
+
+            // Remove o item colidido do mapa
+            mapa[mapaZ][mapaX] = CORRIDOR;
+
+            // Atualiza a posição do jogador apenas se a colisão for com corredor
+            if (mapa[mapaZ][mapaX] == CORRIDOR)
+            {
+                jogador.x = novoX;
+                jogador.z = novoZ;
+            }
         }
     }
     // Atualizar o vetor alvo de acordo com a nova direção do jogador
