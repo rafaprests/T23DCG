@@ -39,6 +39,7 @@ using namespace std;
 #define TABLE 8
 
 std::vector<std::vector<int>> mapa;
+std::vector<std::vector<bool>> rotacaoParede;
 
 Ponto jogador;
 bool andando = false;
@@ -79,7 +80,7 @@ Ponto ALVO;
 Ponto VetorAlvo;
 
 void LeMapa(const std::string &filename);
-void DesenhaParede(float x, float y, float z);
+void DesenhaParede(float x, float y, float z, bool rotate);
 void DesenhaLabirinto();
 void AtualizaPosicaoJogador();
 void DesenhaJogador();
@@ -109,29 +110,50 @@ void LeMapa(const std::string &filename)
     while (getline(file, line))
     {
         std::vector<int> row;
+        std::vector<bool> rotRow; // Linha para armazenar rotação das paredes
+
         std::stringstream ss(line);
         int value;
         while (ss >> value)
         {
             row.push_back(value);
+            if (value == WALL || value == WINDOW || value == DOOR)
+            {
+                // Verifica se precisa rotacionar a parede
+                bool rotate = false;
+                // Verifica paredes adjacentes
+                if (row.size() > 1 && row[row.size() - 2] == WALL)
+                    rotate = true;
+                else if (!rotRow.empty() && rotRow.back())
+                    rotate = true;
+
+                rotRow.push_back(rotate);
+            }
+            else
+            {
+                rotRow.push_back(false); // Não rotaciona se não for parede
+            }
+
             if (ss.peek() == ',')
                 ss.ignore();
         }
         mapa.push_back(row);
+        rotacaoParede.push_back(rotRow); // Armazena a linha de rotação
     }
     file.close();
 
-    for (const auto &row : mapa)
+    // Exibe o mapa lido para verificação
+    for (size_t i = 0; i < mapa.size(); ++i)
     {
-        for (int cell : row)
+        for (size_t j = 0; j < mapa[i].size(); ++j)
         {
-            cout << cell << " ";
+            cout << mapa[i][j] << " ";
         }
         cout << endl;
     }
 }
 
-void DesenhaParede(float x, float y, float z)
+void DesenhaParede(float x, float y, float z, bool rotate)
 {
     float alturaParede = 2.7;
     glPushMatrix();
@@ -139,7 +161,11 @@ void DesenhaParede(float x, float y, float z)
     glTranslatef(x, y, z);
 
     // Ajuste para desenhar a parede inteira para cima
-    glTranslatef(0, alturaParede/2 , 0); // 1.35 metros para cima
+    glTranslatef(0, alturaParede / 2, 0); // 1.35 metros para cima
+
+    // Verifica se deve rotacionar a parede
+    if (rotate)
+        glRotatef(90, 0, 1, 0); // Rotaciona 90 graus em torno do eixo y
 
     // Desenha a parede com a altura correta
     glScalef(1, alturaParede, 0.25); // 2.7 metros de altura e 0.25 metros de espessura
@@ -153,7 +179,6 @@ void DesenhaParede(float x, float y, float z)
 
     glPopMatrix();
 }
-
 
 void DesenhaPiso(float x, float y, float z)
 {
@@ -345,53 +370,57 @@ void DesenhaLabirinto()
     {
         for (size_t j = 0; j < mapa[i].size(); ++j)
         {
-            float x = j * 1.0; // tamanho da célula em metros
+            float x = j * 1.0; // Tamanho da célula em metros
             float z = i * 1.0;
 
             switch (mapa[i][j])
             {
             case CORRIDOR:
-                DesenhaPiso(x,0,z);
+                DesenhaPiso(x, 0, z);
                 break;
             case WALL:
-                DesenhaPiso(x,0,z);
-                DesenhaParede(x, 0, z); 
+                DesenhaPiso(x, 0, z);
+                if (rotacaoParede[i][j])
+                    DesenhaParede(x, 0, z, false);
+                else
+                    DesenhaParede(x, 0, z, true); // Sem rotação
                 break;
             case WINDOW:
-                DesenhaPiso(x,0,z);
+                DesenhaPiso(x, 0, z);
                 DesenhaJanela(x, 0, z);
                 break;
             case DOOR:
-                DesenhaPiso(x,0,z);
+                DesenhaPiso(x, 0, z);
                 DesenhaPorta(x, 0, z);
                 break;
             case PLAYER_START:
                 mapa[i][j] = CORRIDOR;
-                DesenhaPiso(x,0,z);
+                DesenhaPiso(x, 0, z);
                 jogador.x = x;
                 jogador.y = 0;
                 jogador.z = z;
                 break;
             case GAS:
-                DesenhaPiso(x,0,z);
-                DesenhaCombustivel(x,0,z);
+                DesenhaPiso(x, 0, z);
+                DesenhaCombustivel(x, 0, z);
                 break;
             case ENEMY:
-                DesenhaPiso(x,0,z);
-                DesenhaInimigo(x,0,z);
+                DesenhaPiso(x, 0, z);
+                DesenhaInimigo(x, 0, z);
                 break;
             case CHAIR:
-                DesenhaPiso(x,0,z);
-                DesenhaCadeira(x,0,z);
+                DesenhaPiso(x, 0, z);
+                DesenhaCadeira(x, 0, z);
                 break;
             case TABLE:
-                DesenhaPiso(x,0,z);
-                DesenhaMesa(x,0,z);
+                DesenhaPiso(x, 0, z);
+                DesenhaMesa(x, 0, z);
                 break;
             }
         }
     }
 }
+
 
 void ColidiuComGas()
 {
