@@ -46,6 +46,11 @@ bool andando = false;
 double jogadorRotacao = 0.0; // Ângulo de rotação do jogador em graus
 double jogadorVelocidade = 0.1; // Velocidade de movimento do jogador
 
+// energia que o jogador inicializa
+int energia = 100;
+// valor do reabastecimento que o jogador ganha ao passar por combustivel
+int valor_de_reabastecimento = 20;
+
 
 Temporizador T;
 double AccumDeltaT = 0;
@@ -80,9 +85,6 @@ void AtualizaPosicaoJogador();
 void DesenhaJogador();
 void init(void);
 void animate();
-void DesenhaCubo(float tamAresta);
-void DesenhaParalelepipedo();
-void DesenhaLadrilho(int corBorda, int corDentro);
 void DefineLuz(void);
 void MygluPerspective(float fieldOfView, float aspect, float zNear, float zFar);
 void PosicUser();
@@ -100,15 +102,10 @@ void LeMapa(const std::string &filename)
         cerr << "Erro ao abrir o arquivo do mapa!" << endl;
         exit(1);
     }
-    else
-    {
-        cout << "arquivo do mapa aberto" << endl;
-    }
 
     std::string line;
     while (getline(file, line))
     {
-        cout << "Linha lida: " << line << endl;
         std::vector<int> row;
         std::stringstream ss(line);
         int value;
@@ -117,11 +114,9 @@ void LeMapa(const std::string &filename)
             row.push_back(value);
             if (ss.peek() == ',')
                 ss.ignore();
-            cout << "Valor lido: " << value << endl;
         }
         mapa.push_back(row);
     }
-
     file.close();
 
     for (const auto &row : mapa)
@@ -151,7 +146,7 @@ void DesenhaParede(float x, float y, float z)
 
     // Adiciona borda preta
     glColor3f(0, 0, 0);
-    glScalef(1.01, 1.01, 1.01); // Ligeiramente maior para desenhar a borda
+    glScalef(1, 1, 1);
     glutWireCube(1);
 
     glPopMatrix();
@@ -168,7 +163,7 @@ void DesenhaPiso(float x, float y, float z)
 
     // Adiciona borda preta
     glColor3f(0, 0, 0);
-    glScalef(1.01, 1.01, 1.01); // Ligeiramente maior para desenhar a borda
+    glScalef(1, 1, 1);
     glutWireCube(1);
 
     glPopMatrix();
@@ -188,7 +183,7 @@ void DesenhaCombustivel(float x, float y, float z)
 
     // Adiciona borda preta
     glColor3f(0, 0, 0);
-    glScalef(1.01, 1.01, 1.01); // Ligeiramente maior para desenhar a borda
+    glScalef(1, 1, 1); 
     glutWireCube(1);
 
     glPopMatrix();
@@ -208,7 +203,7 @@ void DesenhaJanela(float x, float y, float z)
 
     // Adiciona borda preta
     glColor3f(0, 0, 0);
-    glScalef(1.01, 1.01, 1.01); // Ligeiramente maior para desenhar a borda
+    glScalef(1, 1, 1); 
     glutWireCube(1);
 
     glPopMatrix();
@@ -228,7 +223,8 @@ void DesenhaPorta(float x, float y, float z)
 
     // Adiciona borda preta
     glColor3f(0, 0, 0);
-    glScalef(1.01, 1.01, 1.01); // Ligeiramente maior para desenhar a borda
+    glScalef(1, 1, 1); 
+
     glutWireCube(1);
 
     glPopMatrix();
@@ -248,7 +244,7 @@ void DesenhaInimigo(float x, float y, float z)
 
     // Adiciona borda preta
     glColor3f(0, 0, 0);
-    glScalef(1.01, 1.01, 1.01); // Ligeiramente maior para desenhar a borda
+    glScalef(1, 1, 1);
     glutWireCube(1);
 
     glPopMatrix();
@@ -397,77 +393,28 @@ void DesenhaLabirinto()
 
 void AtualizaPosicaoJogador()
 {
-    // Converter o ângulo de rotação de graus para radianos
+    // Calcula a nova posição do jogador baseado na sua rotação e velocidade
     double rad = jogadorRotacao * M_PI / 180.0;
+    double novoX = jogador.x + cos(rad) * jogadorVelocidade;
+    double novoZ = jogador.z + sin(rad) * jogadorVelocidade;
+
     if (andando)
     {
-        // Calcula a próxima posição do jogador
-        double nextX = jogador.x + jogadorVelocidade * cos(rad);
-        double nextZ = jogador.z + jogadorVelocidade * sin(rad);
+        // Verifica se a nova posição é válida (não colide com paredes)
+        int mapaX = static_cast<int>(novoX + 0.5);
+        int mapaZ = static_cast<int>(novoZ + 0.5);
 
-        // Verifica se a próxima posição não está em colisão
-        bool colisao = false;
-
-        // Verifica as 4 arestas do quadrado ao redor da nova posição
-        for (double dx = -0.5; dx <= 0.5; dx += 1.0)
+        if (mapa[mapaZ][mapaX] == CORRIDOR || mapa[mapaZ][mapaX] == GAS || mapa[mapaZ][mapaX] == ENEMY) 
         {
-            for (double dz = -0.5; dz <= 0.5; dz += 1.0)
-            {
-                int cellX = static_cast<int>(nextX + dx);
-                int cellZ = static_cast<int>(nextZ + dz);
-
-                // Verifica se está fora dos limites do mapa
-                if (cellX < 0 || cellX >= mapa[0].size() || cellZ < 0 || cellZ >= mapa.size())
-                {
-                    colisao = true;
-                    break;
-                }
-
-                // Verifica se a célula é uma parede ou outro obstáculo
-                if (mapa[cellZ][cellX] == WALL || mapa[cellZ][cellX] == DOOR || mapa[cellZ][cellX] == WINDOW 
-                    || mapa[cellZ][cellX] == CHAIR || mapa[cellZ][cellX] == TABLE)
-                {
-                    colisao = true;
-                    break;
-                }
-            }
-            if (colisao) break;
-        }
-
-        if (!colisao)
-        {
-            // Se não houver colisão, atualiza a posição do jogador
-            jogador.x = nextX;
-            jogador.z = nextZ;
-
-            // Verifica colisão com cápsula de energia (GAS)
-            int cellX = static_cast<int>(nextX);
-            int cellZ = static_cast<int>(nextZ);
-            if (mapa[cellZ][cellX] == GAS)
-            {
-                // Reabastece energia (pode ser uma variável que você define)
-                // energia += valor_de_reabastecimento;
-
-                // Move a cápsula de energia para um local aleatório
-                mapa[cellZ][cellX] = CORRIDOR; // Remove a cápsula da posição atual
-                int newGasX, newGasZ;
-                do {
-                    newGasX = rand() % mapa[0].size();
-                    newGasZ = rand() % mapa.size();
-                } while (mapa[newGasZ][newGasX] != CORRIDOR);
-
-                mapa[newGasZ][newGasX] = GAS; // Coloca a cápsula na nova posição
-            }
+            jogador.x = novoX;
+            jogador.z = novoZ;
         }
     }
-
     // Atualizar o vetor alvo de acordo com a nova direção do jogador
     VetorAlvo.x = cos(rad);
     VetorAlvo.z = sin(rad);
     VetorAlvo.y = 0; // Manter o alvo no plano 
 }
-
-
 
 void DesenhaJogador()
 {
@@ -518,86 +465,6 @@ void animate()
     }
 }
 
-void DesenhaCubo(float tamAresta)
-{
-    glBegin(GL_QUADS);
-    // Front Face
-    glNormal3f(0, 0, 1);
-    glVertex3f(-tamAresta / 2, -tamAresta / 2, tamAresta / 2);
-    glVertex3f(tamAresta / 2, -tamAresta / 2, tamAresta / 2);
-    glVertex3f(tamAresta / 2, tamAresta / 2, tamAresta / 2);
-    glVertex3f(-tamAresta / 2, tamAresta / 2, tamAresta / 2);
-    // Back Face
-    glNormal3f(0, 0, -1);
-    glVertex3f(-tamAresta / 2, -tamAresta / 2, -tamAresta / 2);
-    glVertex3f(-tamAresta / 2, tamAresta / 2, -tamAresta / 2);
-    glVertex3f(tamAresta / 2, tamAresta / 2, -tamAresta / 2);
-    glVertex3f(tamAresta / 2, -tamAresta / 2, -tamAresta / 2);
-    // Top Face
-    glNormal3f(0, 1, 0);
-    glVertex3f(-tamAresta / 2, tamAresta / 2, -tamAresta / 2);
-    glVertex3f(-tamAresta / 2, tamAresta / 2, tamAresta / 2);
-    glVertex3f(tamAresta / 2, tamAresta / 2, tamAresta / 2);
-    glVertex3f(tamAresta / 2, tamAresta / 2, -tamAresta / 2);
-    // Bottom Face
-    glNormal3f(0, -1, 0);
-    glVertex3f(-tamAresta / 2, -tamAresta / 2, -tamAresta / 2);
-    glVertex3f(tamAresta / 2, -tamAresta / 2, -tamAresta / 2);
-    glVertex3f(tamAresta / 2, -tamAresta / 2, tamAresta / 2);
-    glVertex3f(-tamAresta / 2, -tamAresta / 2, tamAresta / 2);
-    // Right face
-    glNormal3f(1, 0, 0);
-    glVertex3f(tamAresta / 2, -tamAresta / 2, -tamAresta / 2);
-    glVertex3f(tamAresta / 2, tamAresta / 2, -tamAresta / 2);
-    glVertex3f(tamAresta / 2, tamAresta / 2, tamAresta / 2);
-    glVertex3f(tamAresta / 2, -tamAresta / 2, tamAresta / 2);
-    // Left Face
-    glNormal3f(-1, 0, 0);
-    glVertex3f(-tamAresta / 2, -tamAresta / 2, -tamAresta / 2);
-    glVertex3f(-tamAresta / 2, -tamAresta / 2, tamAresta / 2);
-    glVertex3f(-tamAresta / 2, tamAresta / 2, tamAresta / 2);
-    glVertex3f(-tamAresta / 2, tamAresta / 2, -tamAresta / 2);
-    glEnd();
-}
-void DesenhaParalelepipedo()
-{
-    glPushMatrix();
-    glTranslatef(0, 0, -1);
-    glScalef(1, 1, 2);
-    glutSolidCube(2);
-    // DesenhaCubo(1);
-    glPopMatrix();
-}
-
-// **********************************************************************
-// void DesenhaLadrilho(int corBorda, int corDentro)
-// Desenha uma c�lula do piso.
-// Eh possivel definir a cor da borda e do interior do piso
-// O ladrilho tem largula 1, centro no (0,0,0) e est� sobre o plano XZ
-// **********************************************************************
-void DesenhaLadrilho(int corBorda, int corDentro)
-{
-    //defineCor(Pink); // desenha QUAD preenchido
-    glColor3f(1,1,1);
-    glBegin(GL_QUADS);
-    glNormal3f(0, 1, 0);
-    glVertex3f(-0.5f, 0.0f, -0.5f);
-    glVertex3f(-0.5f, 0.0f, 0.5f);
-    glVertex3f(0.5f, 0.0f, 0.5f);
-    glVertex3f(0.5f, 0.0f, -0.5f);
-    glEnd();
-
-    //defineCor(GreenYellow);
-    glColor3f(0,1,0);
-
-    glBegin(GL_LINE_STRIP);
-    glNormal3f(0, 1, 0);
-    glVertex3f(-0.5f, 0.0f, -0.5f);
-    glVertex3f(-0.5f, 0.0f, 0.5f);
-    glVertex3f(0.5f, 0.0f, 0.5f);
-    glVertex3f(0.5f, 0.0f, -0.5f);
-    glEnd();
-}
 
 void DefineLuz(void)
 {
