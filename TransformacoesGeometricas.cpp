@@ -26,6 +26,8 @@ using namespace std;
 #include "Temporizador.h"
 #include "ListaDeCoresRGB.h"
 #include "Ponto.h"
+#include "Inimigo.h"
+
 
 // Define constants for map elements
 #define CORRIDOR 0
@@ -42,6 +44,7 @@ std::vector<std::vector<int>> mapa;
 std::vector<std::vector<bool>> rotacaoParede;
 
 Ponto jogador;
+std::vector<Inimigo> inimigos;
 bool andando = false;
 
 double jogadorRotacao = 0.0; // Ângulo de rotação do jogador em graus
@@ -283,67 +286,101 @@ void DesenhaPorta(float x, float y, float z)
     glPopMatrix();
 }
 
-void DesenhaInimigo(float x, float y, float z)
-{
-    float altura = 2.0;
-    glPushMatrix();
-    defineCor(Black);
-    glTranslatef(x, y, z);
+// Função para desenhar os inimigos
+void DesenhaInimigos() {
+    for (const auto& inimigo : inimigos) {
+        glPushMatrix();
+        glTranslatef(inimigo.Posicao.x, inimigo.Posicao.y, inimigo.Posicao.z); // Translada para a posição do inimigo
+        glRotatef(inimigo.Rotacao, 0.0f, 1.0f, 0.0f); // Rotaciona conforme a rotação do inimigo (eixo y)
 
-    glTranslatef(0, altura/2 , 0); 
-    glScalef(0.4, altura, 0.25); 
+        // Desenhe o modelo do inimigo usando comandos OpenGL
+        float altura = 2.0;
+        glPushMatrix();
+        glColor3f(inimigo.r, inimigo.g, inimigo.b); // Define a cor do inimigo
+        glTranslatef(0, altura/2 , 0); 
+        glScalef(0.4, altura, 0.25); 
+        glutSolidCube(1);
 
-    glutSolidCube(1);
+        // Adiciona borda preta
+        glColor3f(0, 0, 0);
+        glScalef(1, 1, 1);
+        glutWireCube(1);
 
-    // Adiciona borda preta
-    glColor3f(0, 0, 0);
-    glScalef(1, 1, 1);
-    glutWireCube(1);
-
-    glPopMatrix();
+        glPopMatrix();
+        glPopMatrix();
+    }
 }
+// void DesenhaInimigo(float x, float y, float z)
+// {
+//     float altura = 2.0;
+//     glPushMatrix();
+//     defineCor(Black);
+//     glTranslatef(x, y, z);
+
+//     glTranslatef(0, altura/2 , 0); 
+//     glScalef(0.4, altura, 0.25); 
+
+//     glutSolidCube(1);
+
+//     // Adiciona borda preta
+//     glColor3f(0, 0, 0);
+//     glScalef(1, 1, 1);
+//     glutWireCube(1);
+
+//     glPopMatrix();
+// }
 
 void DesenhaCadeira(float x, float y, float z) {
     glPushMatrix();
     glTranslatef(x, y, z);
 
+    float alturaAssento = 0.6;
+    float espessuraAssento = 0.05;
+    float larguraAssento = 0.6;
+    float profundidadeAssento = 0.6;
+    float alturaEncosto = 0.6;
+    float larguraEncosto = 0.6;
+    float espessuraEncosto = 0.05;
+    float alturaPerna = 0.6;
+    float espessuraPerna = 0.05;
+
     // Assento
     defineCor(Brown);
     glPushMatrix();
-    glTranslatef(0, 0.25, 0);
-    glScalef(0.4, 0.05, 0.4);
+    glTranslatef(0, alturaPerna + espessuraAssento / 2, 0);
+    glScalef(larguraAssento, espessuraAssento, profundidadeAssento);
     glutSolidCube(1);
     glPopMatrix();
 
     // Encosto
     glPushMatrix();
-    glTranslatef(0, 0.5, -0.175);
-    glScalef(0.4, 0.4, 0.05);
+    glTranslatef(0, alturaPerna + espessuraAssento + alturaEncosto / 2, -profundidadeAssento / 2 + espessuraEncosto / 2);
+    glScalef(larguraEncosto, alturaEncosto, espessuraEncosto);
     glutSolidCube(1);
     glPopMatrix();
 
     // Pernas
     glPushMatrix();
-    glTranslatef(0.175, 0.125, 0.175);
-    glScalef(0.05, 0.25, 0.05);
+    glTranslatef(larguraAssento / 2 - espessuraPerna / 2, alturaPerna / 2, profundidadeAssento / 2 - espessuraPerna / 2);
+    glScalef(espessuraPerna, alturaPerna, espessuraPerna);
     glutSolidCube(1);
     glPopMatrix();
 
     glPushMatrix();
-    glTranslatef(-0.175, 0.125, 0.175);
-    glScalef(0.05, 0.25, 0.05);
+    glTranslatef(-larguraAssento / 2 + espessuraPerna / 2, alturaPerna / 2, profundidadeAssento / 2 - espessuraPerna / 2);
+    glScalef(espessuraPerna, alturaPerna, espessuraPerna);
     glutSolidCube(1);
     glPopMatrix();
 
     glPushMatrix();
-    glTranslatef(0.175, 0.125, -0.175);
-    glScalef(0.05, 0.25, 0.05);
+    glTranslatef(larguraAssento / 2 - espessuraPerna / 2, alturaPerna / 2, -profundidadeAssento / 2 + espessuraPerna / 2);
+    glScalef(espessuraPerna, alturaPerna, espessuraPerna);
     glutSolidCube(1);
     glPopMatrix();
 
     glPushMatrix();
-    glTranslatef(-0.175, 0.125, -0.175);
-    glScalef(0.05, 0.25, 0.05);
+    glTranslatef(-larguraAssento / 2 + espessuraPerna / 2, alturaPerna / 2, -profundidadeAssento / 2 + espessuraPerna / 2);
+    glScalef(espessuraPerna, alturaPerna, espessuraPerna);
     glutSolidCube(1);
     glPopMatrix();
 
@@ -357,33 +394,33 @@ void DesenhaMesa(float x, float y, float z) {
     // Tampo da mesa
     defineCor(Brown);
     glPushMatrix();
-    glTranslatef(0, 0.4, 0);
-    glScalef(0.8, 0.05, 0.8);
+    glTranslatef(0, 0.8, 0);
+    glScalef(1, 0.05, 1);
     glutSolidCube(1);
     glPopMatrix();
 
     // Pernas da mesa
     glPushMatrix();
-    glTranslatef(0.35, 0.2, 0.35);
-    glScalef(0.05, 0.4, 0.05);
+    glTranslatef(0.35, 0, 0.35);
+    glScalef(0.05, 1.6, 0.05);
     glutSolidCube(1);
     glPopMatrix();
 
     glPushMatrix();
-    glTranslatef(-0.35, 0.2, 0.35);
-    glScalef(0.05, 0.4, 0.05);
+    glTranslatef(-0.35, 0, 0.35);
+    glScalef(0.05, 1.6, 0.05);
     glutSolidCube(1);
     glPopMatrix();
 
     glPushMatrix();
-    glTranslatef(0.35, 0.2, -0.35);
-    glScalef(0.05, 0.4, 0.05);
+    glTranslatef(0.35, 0, -0.35);
+    glScalef(0.05, 1.6, 0.05);
     glutSolidCube(1);
     glPopMatrix();
 
     glPushMatrix();
-    glTranslatef(-0.35, 0.2, -0.35);
-    glScalef(0.05, 0.4, 0.05);
+    glTranslatef(-0.35, 0, -0.35);
+    glScalef(0.05, 1.6, 0.05);
     glutSolidCube(1);
     glPopMatrix();
 
@@ -432,7 +469,8 @@ void DesenhaLabirinto()
                 break;
             case ENEMY:
                 DesenhaPiso(x, 0, z);
-                DesenhaInimigo(x, 0, z);
+                //DesenhaInimigo(x, 0, z);
+                inimigos.emplace_back(0.0f, Ponto(x, 0.0f, z));
                 break;
             case CHAIR:
                 DesenhaPiso(x, 0, z);
@@ -445,6 +483,8 @@ void DesenhaLabirinto()
             }
         }
     }
+    // Desenha os inimigos
+    DesenhaInimigos();
 }
 
 void ColidiuComGas()
@@ -518,6 +558,43 @@ void AtualizaPosicaoJogador()
     VetorAlvo.y = 0; // Manter o alvo no plano 
 }
 
+// Função para mover os inimigos
+void MoveInimigos() {
+    float velocidade = 20.0; // Velocidade dos inimigos em metros por segundo
+    float dt = T.getDeltaT(); // Obter o tempo delta para um movimento suave
+
+    for (auto& inimigo : inimigos) {
+        // Calcular vetor direção do inimigo em direção ao jogador
+        float deltaX = jogador.x - inimigo.Posicao.x;
+        float deltaZ = jogador.z - inimigo.Posicao.z;
+        float distancia = sqrt(deltaX * deltaX + deltaZ * deltaZ);
+
+        // Normalizar o vetor direção
+        float dirX = deltaX / distancia;
+        float dirZ = deltaZ / distancia;
+
+        // Calcular a nova posição do inimigo com base na velocidade constante
+        float novoX = inimigo.Posicao.x + dirX * velocidade * dt;
+        float novoZ = inimigo.Posicao.z + dirZ * velocidade * dt;
+
+        // Verificar colisões com obstáculos (paredes)
+        int mapaX = static_cast<int>(novoX + 0.5);
+        int mapaZ = static_cast<int>(novoZ + 0.5);
+
+        if (mapa[mapaZ][mapaX] != CORRIDOR) {
+            // Se houver uma colisão, inimigo deve tentar contornar o obstáculo
+            // Por exemplo, tentar mover-se na direção perpendicular à parede
+            // ou simplesmente parar, dependendo da lógica do seu jogo.
+            // Aqui, estamos simplesmente ignorando a colisão por enquanto.
+            continue; // Ou adicionar lógica para contornar obstáculo
+        }
+
+        // Atualizar a posição do inimigo se não houver colisão
+        inimigo.Posicao.x = novoX;
+        inimigo.Posicao.z = novoZ;
+    }
+}
+
 void DesenhaJogador()
 {
     glPushMatrix();
@@ -562,6 +639,9 @@ void animate()
         AccumDeltaT = 0;
         angulo += 1;
         AtualizaPosicaoJogador();
+        if (inimigos.size() != 0){
+            MoveInimigos();
+        }
         glutPostRedisplay();
     }
 }
