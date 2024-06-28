@@ -218,42 +218,68 @@ void DesenhaCombustivel(float x, float y, float z)
 
 void DesenhaJanela(float x, float y, float z)
 {
-    float altura = 1.8;
+    float alturaParede = 2.7;
+    float alturaJanela = 1.1;
+    float alturaInferiorJanela = 0.9;
+    float espessuraParede = 0.25;
+    float larguraJanela = 1.0;
+
+    // Desenhar a parede inferior
+    glPushMatrix();
+    defineCor(Copper);
+    glTranslatef(x, y + alturaInferiorJanela / 2, z);
+    glScalef(1, alturaInferiorJanela, espessuraParede);
+    glutSolidCube(1);
+    glColor3f(0, 0, 0);
+    glutWireCube(1);
+    glPopMatrix();
+
+    // Desenhar a janela
     glPushMatrix();
     defineCor(LightBlue);
-    glTranslatef(x, y, z);
-
-    glTranslatef(0, altura/2 + 0.9 , 0); 
-    glScalef(1, altura, 0.25); 
-
+    glTranslatef(x, y + alturaInferiorJanela + alturaJanela / 2, z);
+    glScalef(larguraJanela, alturaJanela, 0.1);
     glutSolidCube(1);
-
-    // Adiciona borda preta
     glColor3f(0, 0, 0);
-    glScalef(1, 1, 1); 
     glutWireCube(1);
+    glPopMatrix();
 
+    // Desenhar a parede superior
+    glPushMatrix();
+    defineCor(Copper);
+    glTranslatef(x, y + alturaInferiorJanela + alturaJanela + (alturaParede - (alturaInferiorJanela + alturaJanela)) / 2, z);
+    glScalef(1, alturaParede - (alturaInferiorJanela + alturaJanela), espessuraParede);
+    glutSolidCube(1);
+    glColor3f(0, 0, 0);
+    glutWireCube(1);
     glPopMatrix();
 }
 
 void DesenhaPorta(float x, float y, float z)
 {
-    float altura = 2.1;
+    float alturaParede = 2.7;
+    float alturaPorta = 2.1;
+    float espessuraParede = 0.25;
+    float larguraPorta = 1;
+
+    // Desenhar a porta (do chão até 2.1 metros)
     glPushMatrix();
     defineCor(Bronze);
-    glTranslatef(x, y, z);
-
-    glTranslatef(0, altura/2 , 0); 
-    glScalef(1, altura, 0.25); 
-
+    glTranslatef(x, y + alturaPorta / 2, z);
+    glScalef(larguraPorta, alturaPorta, 0.1);
     glutSolidCube(1);
-
-    // Adiciona borda preta
     glColor3f(0, 0, 0);
-    glScalef(1, 1, 1); 
-
     glutWireCube(1);
+    glPopMatrix();
 
+    // Desenhar a parede superior (de 2.1 metros até 2.7 metros)
+    glPushMatrix();
+    defineCor(Copper);
+    glTranslatef(x, y + alturaPorta + (alturaParede - alturaPorta) / 2, z);
+    glScalef(1, alturaParede - alturaPorta, espessuraParede);
+    glutSolidCube(1);
+    glColor3f(0, 0, 0);
+    glutWireCube(1);
     glPopMatrix();
 }
 
@@ -421,7 +447,6 @@ void DesenhaLabirinto()
     }
 }
 
-
 void ColidiuComGas()
 {
     // Encontra uma posição aleatória válida para o combustível
@@ -525,7 +550,6 @@ void init(void)
     VetorAlvo = ALVO - OBS;
 }
 
-
 void animate()
 {
     double dt = T.getDeltaT();
@@ -541,7 +565,6 @@ void animate()
         glutPostRedisplay();
     }
 }
-
 
 void DefineLuz(void)
 {
@@ -600,8 +623,7 @@ void MygluPerspective(float fieldOfView, float aspect, float zNear, float zFar)
 
 void PosicUser()
 {
-
-    // Define os par�metros da proje��o Perspectiva
+     // Define os par�metros da proje��o Perspectiva
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     // Define o volume de visualiza��o sempre a partir da posicao do
@@ -646,7 +668,6 @@ void reshape(int w, int h)
     PosicUser();
 }
 
-
 void display(void)
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -660,7 +681,6 @@ void display(void)
 
     glutSwapBuffers();
 }
-
 
 void keyboard(unsigned char key, int x, int y)
 {
