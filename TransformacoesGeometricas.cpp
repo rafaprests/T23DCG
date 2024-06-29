@@ -97,7 +97,7 @@ void display(void);
 void keyboard(unsigned char key, int x, int y);
 void arrow_keys(int a_keys, int x, int y);
 void ColidiuComGas();
-void ColidiuComInimigo();
+void ColidiuComInimigo(int inimigoIndex);
 
 // Função para ler o mapa do arquivo
 void LeMapa(const std::string &filename)
@@ -427,6 +427,23 @@ void DesenhaMesa(float x, float y, float z) {
     glPopMatrix();
 }
 
+// Função para inicializar as posições dos inimigos
+void InicializaPosicoesInimigos(int quantidade)
+{
+    srand(time(nullptr)); // Inicializa a semente do gerador de números aleatórios
+
+    for (int i = 0; i < quantidade; ++i)
+    {
+        int x, z;
+        do {
+            x = rand() % mapa[0].size(); // Posição aleatória na largura do mapa
+            z = rand() % mapa.size();   // Posição aleatória na altura do mapa
+        } while (mapa[z][x] != CORRIDOR); // Garante que a posição seja um corredor vazio
+
+        inimigos.emplace_back(0.0f, Ponto(x, 0.0f, z));
+    }
+}
+
 void DesenhaLabirinto()
 {
     for (size_t i = 0; i < mapa.size(); ++i)
@@ -467,11 +484,11 @@ void DesenhaLabirinto()
                 DesenhaPiso(x, 0, z);
                 DesenhaCombustivel(x, 0, z);
                 break;
-            case ENEMY:
-                DesenhaPiso(x, 0, z);
-                //DesenhaInimigo(x, 0, z);
-                inimigos.emplace_back(0.0f, Ponto(x, 0.0f, z));
-                break;
+            // case ENEMY:
+            //     DesenhaPiso(x, 0, z);
+            //     //DesenhaInimigo(x, 0, z);
+            //     inimigos.emplace_back(0.0f, Ponto(x, 0.0f, z));
+            //     break;
             case CHAIR:
                 DesenhaPiso(x, 0, z);
                 DesenhaCadeira(x, 0, z);
@@ -483,8 +500,6 @@ void DesenhaLabirinto()
             }
         }
     }
-    // Desenha os inimigos
-    DesenhaInimigos();
 }
 
 void ColidiuComGas()
@@ -503,7 +518,7 @@ void ColidiuComGas()
     energia += valor_de_reabastecimento;
 }
 
-void ColidiuComInimigo()
+void ColidiuComInimigo(int inimigoIndex)
 {
     // Encontra uma posição aleatória válida para o inimigo
     int novoX, novoZ;
@@ -512,8 +527,9 @@ void ColidiuComInimigo()
         novoZ = rand() % mapa.size();   // Posição aleatória na altura do mapa
     } while (mapa[novoZ][novoX] != CORRIDOR); // Garante que a posição seja um corredor vazio
 
-    // Move o inimigo para a nova posição aleatória
-    mapa[novoZ][novoX] = ENEMY;
+    // Atualiza a posição do inimigo no vetor
+    inimigos[inimigoIndex].Posicao.x = novoX;
+    inimigos[inimigoIndex].Posicao.z = novoZ;
 
     // Reduz a energia do jogador (exemplo)
     energia -= 10; // Ajuste conforme necessário
@@ -536,20 +552,14 @@ void AtualizaPosicaoJogador()
         {
             if (mapa[mapaZ][mapaX] == GAS){
                 ColidiuComGas();
-            }else if (mapa[mapaZ][mapaX] == ENEMY)
-            {
-                ColidiuComInimigo();
             }
 
-            // Remove o item colidido do mapa
-            mapa[mapaZ][mapaX] = CORRIDOR;
-
-            // Atualiza a posição do jogador apenas se a colisão for com corredor
-            if (mapa[mapaZ][mapaX] == CORRIDOR)
-            {
-                jogador.x = novoX;
-                jogador.z = novoZ;
+            // Remove o item colidido do mapa, se for GAS
+            if (mapa[mapaZ][mapaX] == GAS) {
+                mapa[mapaZ][mapaX] = CORRIDOR;
             }
+            jogador.x = novoX;
+            jogador.z = novoZ;
         }
     }
     // Atualizar o vetor alvo de acordo com a nova direção do jogador
@@ -558,12 +568,13 @@ void AtualizaPosicaoJogador()
     VetorAlvo.y = 0; // Manter o alvo no plano 
 }
 
-// Função para mover os inimigos
 void MoveInimigos() {
     float velocidade = 20.0; // Velocidade dos inimigos em metros por segundo
     float dt = T.getDeltaT(); // Obter o tempo delta para um movimento suave
 
-    for (auto& inimigo : inimigos) {
+    for (size_t i = 0; i < inimigos.size(); ++i) {
+        auto& inimigo = inimigos[i];
+
         // Calcular vetor direção do inimigo em direção ao jogador
         float deltaX = jogador.x - inimigo.Posicao.x;
         float deltaZ = jogador.z - inimigo.Posicao.z;
@@ -577,21 +588,19 @@ void MoveInimigos() {
         float novoX = inimigo.Posicao.x + dirX * velocidade * dt;
         float novoZ = inimigo.Posicao.z + dirZ * velocidade * dt;
 
-        // Verificar colisões com obstáculos (paredes)
+        // Verificar colisões com o jogador
         int mapaX = static_cast<int>(novoX + 0.5);
         int mapaZ = static_cast<int>(novoZ + 0.5);
 
-        if (mapa[mapaZ][mapaX] != CORRIDOR) {
-            // Se houver uma colisão, inimigo deve tentar contornar o obstáculo
-            // Por exemplo, tentar mover-se na direção perpendicular à parede
-            // ou simplesmente parar, dependendo da lógica do seu jogo.
-            // Aqui, estamos simplesmente ignorando a colisão por enquanto.
-            continue; // Ou adicionar lógica para contornar obstáculo
+        if (static_cast<int>(jogador.x + 0.5) == mapaX && static_cast<int>(jogador.z + 0.5) == mapaZ) {
+            // Se colidiu com o jogador, chama a função de colisão
+            ColidiuComInimigo(i);
+            break;
+        } else if (mapa[mapaZ][mapaX] == CORRIDOR) {
+            // Atualizar a posição do inimigo se não houver colisão com obstáculos
+            inimigo.Posicao.x = novoX;
+            inimigo.Posicao.z = novoZ;
         }
-
-        // Atualizar a posição do inimigo se não houver colisão
-        inimigo.Posicao.x = novoX;
-        inimigo.Posicao.z = novoZ;
     }
 }
 
@@ -758,6 +767,7 @@ void display(void)
     glMatrixMode(GL_MODELVIEW);
     DesenhaLabirinto();
     DesenhaJogador();
+    DesenhaInimigos();
 
     glutSwapBuffers();
 }
@@ -811,7 +821,6 @@ void arrow_keys(int a_keys, int x, int y)
     glutPostRedisplay();
 }
 
-
 int main(int argc, char **argv)
 {
     glutInit(&argc, argv);
@@ -823,6 +832,7 @@ int main(int argc, char **argv)
     init();
 
     LeMapa("mapa.txt");
+    InicializaPosicoesInimigos(10);
 
     glutDisplayFunc(display);
     glutReshapeFunc(reshape);
