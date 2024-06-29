@@ -2,7 +2,7 @@
 
 // Construtor
 Inimigo::Inimigo(float rotacaoInicial, const Ponto& posicaoInicial)
-    : Rotacao(rotacaoInicial), Posicao(posicaoInicial), r(1.0), g(0.0), b(0.0) {
+    : Rotacao(rotacaoInicial), Posicao(posicaoInicial) {
     // Inicializa atributos conforme necessário
 }
 

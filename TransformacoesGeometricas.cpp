@@ -286,49 +286,51 @@ void DesenhaPorta(float x, float y, float z)
     glPopMatrix();
 }
 
-// Função para desenhar os inimigos
+// Função para desenhar os inimigos no estilo do Enderman do Minecraft
 void DesenhaInimigos() {
     for (const auto& inimigo : inimigos) {
         glPushMatrix();
         glTranslatef(inimigo.Posicao.x, inimigo.Posicao.y, inimigo.Posicao.z); // Translada para a posição do inimigo
         glRotatef(inimigo.Rotacao, 0.0f, 1.0f, 0.0f); // Rotaciona conforme a rotação do inimigo (eixo y)
 
-        // Desenhe o modelo do inimigo usando comandos OpenGL
-        float altura = 2.0;
+        // Corpo do Enderman
+        glColor3f(0.0f, 0.0f, 0.0f); // Cor preta
         glPushMatrix();
-        glColor3f(inimigo.r, inimigo.g, inimigo.b); // Define a cor do inimigo
-        glTranslatef(0, altura/2 , 0); 
-        glScalef(0.4, altura, 0.25); 
-        glutSolidCube(1);
-
-        // Adiciona borda preta
-        glColor3f(0, 0, 0);
-        glScalef(1, 1, 1);
-        glutWireCube(1);
-
+        glTranslatef(0.0, 0.0, 0.0); // Translada para a altura do corpo
+        glScalef(0.2, 4.8, 0.2); // Escala para ajustar o tamanho
+        glutSolidCube(1); // Desenha o corpo sólido
         glPopMatrix();
+
+        // Cabeça do Enderman
+        glColor3f(0.0f, 0.0f, 0.0f); // Cor preta
+        glPushMatrix();
+        glTranslatef(0, 2.4, 0); // Translada para a altura da cabeça
+        glScalef(0.5, 0.5, 0.5); // Escala para ajustar o tamanho
+        glutSolidCube(1); // Desenha a cabeça sólida
         glPopMatrix();
+
+        // Olhos do Enderman (branco)
+        glColor3f(1.0f, 1.0f, 1.0f); // Cor branca
+        glPushMatrix();
+        glTranslatef(-0.1, 2.6, 0.3); // Translada para a posição do olho esquerdo
+        glutSolidCube(0.1); // Desenha o olho esquerdo sólido
+        glTranslatef(0.2, 0, 0); // Translada para a posição do olho direito
+        glutSolidCube(0.1); // Desenha o olho direito sólido
+        glPopMatrix();
+
+        // Braços do Enderman
+        glColor3f(0.0f, 0.0f, 0.0f); // Cor preta
+        glPushMatrix();
+        glTranslatef(-0.3, 1.5, 0.0); // Translada para a posição do braço esquerdo
+        glScalef(0.1, 1.0, 0.1); // Ajusta a escala do braço
+        glutSolidCube(1); // Desenha o braço sólido
+        glTranslatef(0.8, 0, 0); // Translada para a posição do braço direito
+        glutSolidCube(1); // Desenha o braço sólido
+        glPopMatrix();
+
+        glPopMatrix(); // Restaura a matriz de transformação anterior
     }
 }
-// void DesenhaInimigo(float x, float y, float z)
-// {
-//     float altura = 2.0;
-//     glPushMatrix();
-//     defineCor(Black);
-//     glTranslatef(x, y, z);
-
-//     glTranslatef(0, altura/2 , 0); 
-//     glScalef(0.4, altura, 0.25); 
-
-//     glutSolidCube(1);
-
-//     // Adiciona borda preta
-//     glColor3f(0, 0, 0);
-//     glScalef(1, 1, 1);
-//     glutWireCube(1);
-
-//     glPopMatrix();
-// }
 
 void DesenhaCadeira(float x, float y, float z) {
     glPushMatrix();
@@ -598,8 +600,8 @@ void MoveInimigos() {
             break;
         } else if (mapa[mapaZ][mapaX] == CORRIDOR) {
             // Atualizar a posição do inimigo se não houver colisão com obstáculos
-            inimigo.Posicao.x = novoX;
-            inimigo.Posicao.z = novoZ;
+            inimigos[i].Posicao.x = novoX;
+            inimigos[i].Posicao.z = novoZ;
         }
     }
 }
@@ -648,9 +650,7 @@ void animate()
         AccumDeltaT = 0;
         angulo += 1;
         AtualizaPosicaoJogador();
-        if (inimigos.size() != 0){
-            MoveInimigos();
-        }
+        MoveInimigos();
         glutPostRedisplay();
     }
 }
