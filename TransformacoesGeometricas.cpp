@@ -49,8 +49,8 @@ bool andando = false;
 
 double jogadorRotacao = 0.0; // Ângulo de rotação do jogador em graus
 double jogadorVetorRotacao = 0.0;
-double jogadorVelocidade = 0.1; // Velocidade de movimento do jogador
-double inimigoVelocidade = 0.2; // Velocidade de movimento do inimigo
+double jogadorVelocidade = 0.5; // Velocidade de movimento do jogador
+double inimigoVelocidade = 1; // Velocidade de movimento do inimigo
 
 // energia que o jogador inicializa
 int energia = 100;
@@ -422,6 +422,23 @@ void DesenhaMesa(float x, float y, float z) {
     glPopMatrix();
 }
 
+// Função para inicializar as posições dos combustiveis
+void InicializaPosicoesCombustiveis(int quantidade)
+{
+    srand(time(nullptr)); // Inicializa a semente do gerador de números aleatórios
+
+    for (int i = 0; i < quantidade; ++i)
+    {
+        int x, z;
+        do {
+            x = rand() % mapa[0].size(); 
+            z = rand() % mapa.size();   
+        } while (mapa[z][x] != CORRIDOR);
+
+        mapa[z][x] = GAS;
+    }
+}
+
 // Função para inicializar as posições dos inimigos
 void InicializaPosicoesInimigos(int quantidade)
 {
@@ -505,7 +522,9 @@ void ColidiuComGas()
     mapa[novoZ][novoX] = GAS;
 
     // Aumenta a energia do jogador
-    energia += valor_de_reabastecimento;
+    if (energia < 100){
+        energia += valor_de_reabastecimento;
+    }
 }
 
 void ColidiuComInimigo(int inimigoIndex)
@@ -692,44 +711,31 @@ void animate()
 
 void DefineLuz(void)
 {
-    // Define cores para um objeto dourado
-    // GLfloat LuzAmbiente[]   = {0.0, 0.0, 0.0 } ;
-    GLfloat LuzAmbiente[] = {0.4, 0.4, 0.4};
-    GLfloat LuzDifusa[] = {0.7, 0.7, 0.7};
-    // GLfloat LuzDifusa[]   = {0, 0, 0};
-    GLfloat PosicaoLuz0[] = {0.0f, 3.0f, 5.0f}; // Posi��o da Luz
-    GLfloat LuzEspecular[] = {0.9f, 0.9f, 0.9};
-    // GLfloat LuzEspecular[] = {0.0f, 0.0f, 0.0 };
+    // Calcule a intensidade da luz com base na energia do jogador
+    float intensidade = energia / 100.0f; // energia varia de 0 a 100
+
+    // Defina as cores da luz, variando do vermelho ao branco
+    GLfloat LuzAmbiente[] = {0.4f * intensidade, 0.4f * intensidade, 0.4f * intensidade};
+    GLfloat LuzDifusa[] = {intensidade, intensidade * 0.3f, intensidade * 0.3f}; // mais vermelho conforme diminui energia
+    GLfloat LuzEspecular[] = {0.9f * intensidade, 0.9f * intensidade, 0.9f * intensidade};
+    GLfloat PosicaoLuz0[] = {0.0f, 3.0f, 5.0f}; // Posição da Luz
 
     GLfloat Especularidade[] = {1.0f, 1.0f, 1.0f};
 
-    // ****************  Fonte de Luz 0
-
     glEnable(GL_COLOR_MATERIAL);
-
-    // Habilita o uso de ilumina��o
     glEnable(GL_LIGHTING);
-
-    // Ativa o uso da luz ambiente
     glLightModelfv(GL_LIGHT_MODEL_AMBIENT, LuzAmbiente);
-    // Define os parametros da luz n�mero Zero
     glLightfv(GL_LIGHT0, GL_AMBIENT, LuzAmbiente);
     glLightfv(GL_LIGHT0, GL_DIFFUSE, LuzDifusa);
     glLightfv(GL_LIGHT0, GL_SPECULAR, LuzEspecular);
     glLightfv(GL_LIGHT0, GL_POSITION, PosicaoLuz0);
     glEnable(GL_LIGHT0);
 
-    // Ativa o "Color Tracking"
     glEnable(GL_COLOR_MATERIAL);
-
-    // Define a reflectancia do material
     glMaterialfv(GL_FRONT, GL_SPECULAR, Especularidade);
-
-    // Define a concentra��oo do brilho.
-    // Quanto maior o valor do Segundo parametro, mais
-    // concentrado ser� o brilho. (Valores v�lidos: de 0 a 128)
     glMateriali(GL_FRONT, GL_SHININESS, 128);
 }
+
 
 void MygluPerspective(float fieldOfView, float aspect, float zNear, float zFar)
 {
@@ -857,8 +863,10 @@ int main(int argc, char **argv)
 
     init();
 
-    LeMapa("mapa.txt");
+    LeMapa("mapaOficial.txt");
+    InicializaPosicoesCombustiveis(10);
     InicializaPosicoesInimigos(10);
+    
 
     glutDisplayFunc(display);
     glutReshapeFunc(reshape);
