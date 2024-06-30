@@ -49,29 +49,17 @@ bool andando = false;
 
 double jogadorRotacao = 0.0; // Ângulo de rotação do jogador em graus
 double jogadorVelocidade = 0.1; // Velocidade de movimento do jogador
+double inimigoVelocidade = 0.2; // Velocidade de movimento do inimigo
 
 // energia que o jogador inicializa
 int energia = 100;
 // valor do reabastecimento que o jogador ganha ao passar por combustivel
 int valor_de_reabastecimento = 20;
 
-
 Temporizador T;
 double AccumDeltaT = 0;
 
 GLfloat AspectRatio, angulo = 0;
-
-// Controle do modo de projecao
-// 0: Projecao Paralela Ortografica; 1: Projecao Perspectiva
-// A funcao "PosicUser" utiliza esta variavel. O valor dela eh alterado
-// pela tecla 'p'
-int ModoDeProjecao = 1;
-
-// Controle do modo de projecao
-// 0: Wireframe; 1: Faces preenchidas
-// A funcao "Init" utiliza esta variavel. O valor dela eh alterado
-// pela tecla 'e'
-int ModoDeExibicao = 1;
 
 // 0: Primeira pessoa, 1: Visão de cima
 int ModoDeVisao = 0; 
@@ -291,7 +279,7 @@ void DesenhaInimigos() {
     for (const auto& inimigo : inimigos) {
         glPushMatrix();
         glTranslatef(inimigo.Posicao.x, inimigo.Posicao.y, inimigo.Posicao.z); // Translada para a posição do inimigo
-        glRotatef(inimigo.Rotacao, 0.0f, 1.0f, 0.0f); // Rotaciona conforme a rotação do inimigo (eixo y)
+        glRotatef(inimigo.Rotacao + 90.0f, 0.0f, 1.0f, 0.0f); // Rotaciona conforme a rotação do inimigo (eixo y)
 
         // Corpo do Enderman
         glColor3f(0.0f, 0.0f, 0.0f); // Cor preta
@@ -438,9 +426,9 @@ void InicializaPosicoesInimigos(int quantidade)
     {
         int x, z;
         do {
-            x = rand() % mapa[0].size(); // Posição aleatória na largura do mapa
-            z = rand() % mapa.size();   // Posição aleatória na altura do mapa
-        } while (mapa[z][x] != CORRIDOR); // Garante que a posição seja um corredor vazio
+            x = rand() % mapa[0].size(); 
+            z = rand() % mapa.size();   
+        } while (mapa[z][x] != CORRIDOR);
 
         inimigos.emplace_back(0.0f, Ponto(x, 0.0f, z));
     }
@@ -486,11 +474,6 @@ void DesenhaLabirinto()
                 DesenhaPiso(x, 0, z);
                 DesenhaCombustivel(x, 0, z);
                 break;
-            // case ENEMY:
-            //     DesenhaPiso(x, 0, z);
-            //     //DesenhaInimigo(x, 0, z);
-            //     inimigos.emplace_back(0.0f, Ponto(x, 0.0f, z));
-            //     break;
             case CHAIR:
                 DesenhaPiso(x, 0, z);
                 DesenhaCadeira(x, 0, z);
@@ -550,7 +533,7 @@ void AtualizaPosicaoJogador()
         int mapaX = static_cast<int>(novoX + 0.5);
         int mapaZ = static_cast<int>(novoZ + 0.5);
 
-        if (mapa[mapaZ][mapaX] == CORRIDOR || mapa[mapaZ][mapaX] == GAS || mapa[mapaZ][mapaX] == ENEMY) 
+        if (mapa[mapaZ][mapaX] == CORRIDOR || mapa[mapaZ][mapaX] == GAS) 
         {
             if (mapa[mapaZ][mapaX] == GAS){
                 ColidiuComGas();
@@ -570,27 +553,33 @@ void AtualizaPosicaoJogador()
     VetorAlvo.y = 0; // Manter o alvo no plano 
 }
 
-void MoveInimigos() {
-    float velocidade = 20.0; // Velocidade dos inimigos em metros por segundo
-    float dt = T.getDeltaT(); // Obter o tempo delta para um movimento suave
+void ApontaInimigosJogador(Inimigo &i)
+{
+    Ponto pontoInimigo = i.Posicao;
 
+    // Calcula o vetor entre o inimigo e o jogador
+    float vetorX = jogador.x - pontoInimigo.x;
+    float vetorZ = jogador.z - pontoInimigo.z;
+
+    // Calcula o ângulo entre os vetores usando atan2, que lida corretamente com todos os quadrantes
+    float anguloRad = atan2(vetorZ, vetorX);
+    float anguloGraus = anguloRad * 180.0 / M_PI;
+
+    // Ajusta a rotação do inimigo para apontar para o jogador
+    i.Rotacao = -anguloGraus;
+}
+
+void MoveInimigos() {
     for (size_t i = 0; i < inimigos.size(); ++i) {
         auto& inimigo = inimigos[i];
 
-        // Calcular vetor direção do inimigo em direção ao jogador
-        float deltaX = jogador.x - inimigo.Posicao.x;
-        float deltaZ = jogador.z - inimigo.Posicao.z;
-        float distancia = sqrt(deltaX * deltaX + deltaZ * deltaZ);
+        ApontaInimigosJogador(inimigo);
 
-        // Normalizar o vetor direção
-        float dirX = deltaX / distancia;
-        float dirZ = deltaZ / distancia;
-
-        // Calcular a nova posição do inimigo com base na velocidade constante
-        float novoX = inimigo.Posicao.x + dirX * velocidade * dt;
-        float novoZ = inimigo.Posicao.z + dirZ * velocidade * dt;
-
-        // Verificar colisões com o jogador
+        // Calcula a nova posicao do inimigo baseado na sua rotacao e velocidade
+        double rad = (inimigo.Rotacao) * M_PI / 180.0;
+        double novoX = inimigo.Posicao.x + cos(rad) * inimigoVelocidade;
+        double novoZ = inimigo.Posicao.z + sin(rad) * inimigoVelocidade;
+        
         int mapaX = static_cast<int>(novoX + 0.5);
         int mapaZ = static_cast<int>(novoZ + 0.5);
 
@@ -600,8 +589,8 @@ void MoveInimigos() {
             break;
         } else if (mapa[mapaZ][mapaX] == CORRIDOR) {
             // Atualizar a posição do inimigo se não houver colisão com obstáculos
-            inimigos[i].Posicao.x = novoX;
-            inimigos[i].Posicao.z = novoZ;
+            inimigo.Posicao.x = novoX;
+            inimigo.Posicao.z = novoZ;
         }
     }
 }
@@ -628,10 +617,7 @@ void init(void)
     glShadeModel(GL_FLAT);    // Modelo de sombreamento flat para um efeito mais simples
 
     glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
-    if (ModoDeExibicao) // Faces Preenchidas??
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    else
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     
     OBS = Ponto(0, 5, 10);
     ALVO = Ponto(0, 0, 0);
@@ -717,9 +703,7 @@ void PosicUser()
     glLoadIdentity();
     // Define o volume de visualiza��o sempre a partir da posicao do
     // observador
-    if (ModoDeProjecao == 0)
-        glOrtho(-10, 10, -10, 10, 0, 20); // Projecao paralela Orthografica
-    else
+
         MygluPerspective(60, AspectRatio, 0.1, 50); // Projecao perspectiva
 
     glMatrixMode(GL_MODELVIEW);
@@ -781,15 +765,6 @@ void keyboard(unsigned char key, int x, int y)
         break;
     case ' ':
         andando = !andando;
-        break;
-    case 'p':
-        ModoDeProjecao = !ModoDeProjecao;
-        glutPostRedisplay();
-        break;
-    case 'e':
-        ModoDeExibicao = !ModoDeExibicao;
-        init();
-        glutPostRedisplay();
         break;
     case 'v':
         ModoDeVisao = !ModoDeVisao;
