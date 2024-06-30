@@ -274,7 +274,6 @@ void DesenhaPorta(float x, float y, float z)
     glPopMatrix();
 }
 
-// Função para desenhar os inimigos no estilo do Enderman do Minecraft
 void DesenhaInimigos() {
     for (const auto& inimigo : inimigos) {
         glPushMatrix();
@@ -300,7 +299,7 @@ void DesenhaInimigos() {
         // Olhos do Enderman (branco)
         glColor3f(1.0f, 1.0f, 1.0f); // Cor branca
         glPushMatrix();
-        glTranslatef(-0.1, 2.6, 0.3); // Translada para a posição do olho esquerdo
+        glTranslatef(-0.1, 2.4, 0.3); // Translada para a posição do olho esquerdo
         glutSolidCube(0.1); // Desenha o olho esquerdo sólido
         glTranslatef(0.2, 0, 0); // Translada para a posição do olho direito
         glutSolidCube(0.1); // Desenha o olho direito sólido
@@ -309,16 +308,21 @@ void DesenhaInimigos() {
         // Braços do Enderman
         glColor3f(0.0f, 0.0f, 0.0f); // Cor preta
         glPushMatrix();
-        glTranslatef(-0.3, 1.5, 0.0); // Translada para a posição do braço esquerdo
+        glTranslatef(0.2, 1.5, 0.0); // Translada para a posição do braço esquerdo
         glScalef(0.1, 1.0, 0.1); // Ajusta a escala do braço
         glutSolidCube(1); // Desenha o braço sólido
-        glTranslatef(0.8, 0, 0); // Translada para a posição do braço direito
+        glPopMatrix();
+
+        glPushMatrix();
+        glTranslatef(-0.2, 1.5, 0.0); // Translada para a posição do braço direito
+        glScalef(0.1, 1.0, 0.1); // Ajusta a escala do braço
         glutSolidCube(1); // Desenha o braço sólido
         glPopMatrix();
 
         glPopMatrix(); // Restaura a matriz de transformação anterior
     }
 }
+
 
 void DesenhaCadeira(float x, float y, float z) {
     glPushMatrix();
@@ -705,7 +709,7 @@ void PosicUser()
     // Define o volume de visualiza��o sempre a partir da posicao do
     // observador
 
-        MygluPerspective(60, AspectRatio, 0.1, 50); // Projecao perspectiva
+    MygluPerspective(60, AspectRatio, 0.1, 50); // Projecao perspectiva
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
