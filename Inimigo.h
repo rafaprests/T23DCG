@@ -7,6 +7,7 @@ public:
     Inimigo(float rotacaoInicial, const Ponto& posicaoInicial);
     Ponto Posicao;
     float Rotacao;
+    float VetorRotacao;
     void AtualizaPosicao(double tempoDecorrido, Ponto max, Ponto min);
     double r,g,b;
     };

@@ -567,6 +567,7 @@ void ApontaInimigosJogador(Inimigo &i)
 
     // Ajusta a rotação do inimigo para apontar para o jogador
     i.Rotacao = -anguloGraus;
+    i.VetorRotacao = anguloGraus;
 }
 
 void MoveInimigos() {
@@ -576,7 +577,7 @@ void MoveInimigos() {
         ApontaInimigosJogador(inimigo);
 
         // Calcula a nova posicao do inimigo baseado na sua rotacao e velocidade
-        double rad = (inimigo.Rotacao) * M_PI / 180.0;
+        double rad = (inimigo.VetorRotacao) * M_PI / 180.0;
         double novoX = inimigo.Posicao.x + cos(rad) * inimigoVelocidade;
         double novoZ = inimigo.Posicao.z + sin(rad) * inimigoVelocidade;
         
