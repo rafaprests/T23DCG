@@ -48,6 +48,7 @@ std::vector<Inimigo> inimigos;
 bool andando = false;
 
 double jogadorRotacao = 0.0; // Ângulo de rotação do jogador em graus
+double jogadorVetorRotacao = 0.0;
 double jogadorVelocidade = 0.1; // Velocidade de movimento do jogador
 double inimigoVelocidade = 0.2; // Velocidade de movimento do inimigo
 
@@ -604,11 +605,54 @@ void DesenhaJogador()
 {
     glPushMatrix();
     glTranslatef(jogador.x, jogador.y, jogador.z);
-    glRotatef(jogadorRotacao, 0.0, 1.0, 0.0); // Aplica a rotação do jogador
-    glColor3f(1, 0, 0);           // Cor vermelha para o jogador
-    glutSolidSphere(0.5, 20, 20); // Desenha o jogador como uma esfera
+    glRotatef(jogadorVetorRotacao, 0.0, 1.0, 0.0); // Aplica a rotação do jogador
+
+    // Cabeça do Steve (azul claro)
+    glColor3f(0.56f, 0.77f, 0.95f); // Cor azul claro para a cabeça
+    glPushMatrix();
+    glTranslatef(0.0f, 1.8f, 0.0f); // Translada para a altura da cabeça
+    glutSolidCube(0.6); // Desenha a cabeça como um cubo
     glPopMatrix();
+
+    // Corpo do Steve (azul escuro)
+    glColor3f(0.14f, 0.42f, 0.8f); // Cor azul escuro para o corpo
+    glPushMatrix();
+    glTranslatef(0.0f, 0.8f, 0.0f); // Translada para a altura do corpo
+    glScalef(0.3f, 1.0f, 0.5f); // Ajusta a escala do corpo
+    glutSolidCube(1.0); // Desenha o corpo como um cubo
+    glPopMatrix();
+
+    // Braços do Steve (azul escuro)
+    glColor3f(0.14f, 0.42f, 0.8f); // Cor azul escuro para os braços
+    glPushMatrix();
+    glTranslatef(0.0f, 1.2f, -0.4f); // Translada para a posição do braço esquerdo
+    glScalef(0.2f, 1.0f, 0.2f); // Ajusta a escala do braço
+    glutSolidCube(1.0); // Desenha o braço esquerdo como um cubo
+    glPopMatrix();
+
+    glPushMatrix();
+    glTranslatef(0.0f, 1.2f, 0.4f); // Translada para a posição do braço direito
+    glScalef(0.2f, 1.0f, 0.2f); // Ajusta a escala do braço
+    glutSolidCube(1.0); // Desenha o braço direito como um cubo
+    glPopMatrix();
+
+    // Pernas do Steve (azul escuro)
+    glColor3f(0.14f, 0.42f, 0.8f); // Cor azul escuro para as pernas
+    glPushMatrix();
+    glTranslatef(0.0f, 0.3f, -0.2f); // Translada para a posição da perna esquerda
+    glScalef(0.2f, 0.8f, 0.2f); // Ajusta a escala da perna
+    glutSolidCube(1.0); // Desenha a perna esquerda como um cubo
+    glPopMatrix();
+
+    glPushMatrix();
+    glTranslatef(0.0f, 0.3f, 0.2f); // Translada para a posição da perna direita
+    glScalef(0.2f, 0.8f, 0.2f); // Ajusta a escala da perna
+    glutSolidCube(1.0); // Desenha a perna direita como um cubo
+    glPopMatrix();
+
+    glPopMatrix(); // Restaura a matriz de transformação anterior
 }
+
 
 void init(void)
 {
@@ -787,11 +831,13 @@ void arrow_keys(int a_keys, int x, int y)
     {
     case GLUT_KEY_RIGHT:
         jogadorRotacao += 5.0; // Rotaciona 5 graus para a esquerda
+        jogadorVetorRotacao -= 5.0;
         if (jogadorRotacao >= 360.0)
             jogadorRotacao -= 360.0;
         break;
     case GLUT_KEY_LEFT:
         jogadorRotacao -= 5.0; // Rotaciona 5 graus para a direita
+        jogadorVetorRotacao += 5.0;
         if (jogadorRotacao < 0.0)
             jogadorRotacao += 360.0;
         break;
