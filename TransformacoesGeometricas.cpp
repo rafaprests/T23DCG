@@ -41,7 +41,7 @@ using namespace std;
 
 // variaveis relativas ao mapa
 std::vector<std::vector<int>> mapa;
-std::vector<std::vector<bool>> rotacaoParede;
+std::vector<std::vector<bool>> rotacaoMapa;
 
 // variaveis relativar ao jogador
 Ponto jogador;
@@ -50,7 +50,7 @@ double jogadorRotacao = 0.0; // Ângulo de rotação do jogador em graus
 double jogadorVetorRotacao = 0.0;
 double jogadorVelocidade = 0.5; // Velocidade de movimento do jogador
 int energia = 100;
-// 0: Primeira pessoa, 1: Visão de cima
+// 0: Primeira pessoa, 1: Visão de cima, 2: Terceira pessoa
 int ModoDeVisao = 0;
 
 // variaveis relativas aos combustiveis
@@ -77,23 +77,6 @@ Ponto VetorAlvo;
 Temporizador T;
 double AccumDeltaT = 0;
 
-void LeMapa(const std::string &filename);
-void DesenhaParede(float x, float y, float z, bool rotate);
-void DesenhaLabirinto();
-void AtualizaPosicaoJogador();
-void DesenhaJogador();
-void init(void);
-void animate();
-void DefineLuz(void);
-void MygluPerspective(float fieldOfView, float aspect, float zNear, float zFar);
-void PosicUser();
-void reshape(int w, int h);
-void display(void);
-void keyboard(unsigned char key, int x, int y);
-void arrow_keys(int a_keys, int x, int y);
-void ColidiuComGas();
-void ColidiuComInimigo(int inimigoIndex);
-
 // Função para ler o mapa do arquivo
 void LeMapa(const std::string &filename)
 {
@@ -108,35 +91,32 @@ void LeMapa(const std::string &filename)
     while (getline(file, line))
     {
         std::vector<int> row;
-        std::vector<bool> rotRow; // Linha para armazenar rotação das paredes
+        std::vector<bool> rotRow; // Linha para armazenar rotação do mapa
 
         std::stringstream ss(line);
         int value;
         while (ss >> value)
         {
             row.push_back(value);
+
+            // Verifica se precisa rotacionar
+            bool rotate = false;
             if (value == WALL || value == WINDOW || value == DOOR)
             {
-                // Verifica se precisa rotacionar a parede
-                bool rotate = false;
-                // Verifica paredes adjacentes
+                // Verifica paredes, janelas ou portas adjacentes
                 if (row.size() > 1 && row[row.size() - 2] == WALL)
                     rotate = true;
                 else if (!rotRow.empty() && rotRow.back())
                     rotate = true;
+            }
 
-                rotRow.push_back(rotate);
-            }
-            else
-            {
-                rotRow.push_back(false); // Não rotaciona se não for parede
-            }
+            rotRow.push_back(rotate);
 
             if (ss.peek() == ',')
                 ss.ignore();
         }
         mapa.push_back(row);
-        rotacaoParede.push_back(rotRow); // Armazena a linha de rotação
+        rotacaoMapa.push_back(rotRow); // Armazena a linha de rotação do mapa
     }
     file.close();
 
@@ -214,7 +194,7 @@ void DesenhaCombustivel(float x, float y, float z)
     glPopMatrix();
 }
 
-void DesenhaJanela(float x, float y, float z)
+void DesenhaJanela(float x, float y, float z, bool rotate)
 {
     float alturaParede = 2.7;
     float alturaJanela = 1.1;
@@ -226,6 +206,10 @@ void DesenhaJanela(float x, float y, float z)
     glPushMatrix();
     defineCor(Copper);
     glTranslatef(x, y + alturaInferiorJanela / 2, z);
+    // Verifica se deve rotacionar a parede
+    if (rotate)
+        glRotatef(90, 0, 1, 0); // Rotaciona 90 graus em torno do eixo y
+
     glScalef(1, alturaInferiorJanela, espessuraParede);
     glutSolidCube(1);
     glColor3f(0, 0, 0);
@@ -236,6 +220,10 @@ void DesenhaJanela(float x, float y, float z)
     glPushMatrix();
     defineCor(LightBlue);
     glTranslatef(x, y + alturaInferiorJanela + alturaJanela / 2, z);
+    // Verifica se deve rotacionar a parede
+    if (rotate)
+        glRotatef(90, 0, 1, 0); // Rotaciona 90 graus em torno do eixo y
+
     glScalef(larguraJanela, alturaJanela, 0.1);
     glutSolidCube(1);
     glColor3f(0, 0, 0);
@@ -246,6 +234,10 @@ void DesenhaJanela(float x, float y, float z)
     glPushMatrix();
     defineCor(Copper);
     glTranslatef(x, y + alturaInferiorJanela + alturaJanela + (alturaParede - (alturaInferiorJanela + alturaJanela)) / 2, z);
+    // Verifica se deve rotacionar a parede
+    if (rotate)
+        glRotatef(90, 0, 1, 0); // Rotaciona 90 graus em torno do eixo y
+
     glScalef(1, alturaParede - (alturaInferiorJanela + alturaJanela), espessuraParede);
     glutSolidCube(1);
     glColor3f(0, 0, 0);
@@ -253,7 +245,7 @@ void DesenhaJanela(float x, float y, float z)
     glPopMatrix();
 }
 
-void DesenhaPorta(float x, float y, float z)
+void DesenhaPorta(float x, float y, float z, bool rotate)
 {
     float alturaParede = 2.7;
     float alturaPorta = 2.1;
@@ -264,6 +256,10 @@ void DesenhaPorta(float x, float y, float z)
     glPushMatrix();
     defineCor(Bronze);
     glTranslatef(x, y + alturaPorta / 2, z);
+    // Verifica se deve rotacionar a parede
+    if (rotate)
+        glRotatef(90, 0, 1, 0); // Rotaciona 90 graus em torno do eixo y
+
     glScalef(larguraPorta, alturaPorta, 0.1);
     glutSolidCube(1);
     glColor3f(0, 0, 0);
@@ -274,6 +270,10 @@ void DesenhaPorta(float x, float y, float z)
     glPushMatrix();
     defineCor(Copper);
     glTranslatef(x, y + alturaPorta + (alturaParede - alturaPorta) / 2, z);
+    // Verifica se deve rotacionar a parede
+    if (rotate)
+        glRotatef(90, 0, 1, 0); // Rotaciona 90 graus em torno do eixo y
+
     glScalef(1, alturaParede - alturaPorta, espessuraParede);
     glutSolidCube(1);
     glColor3f(0, 0, 0);
@@ -431,6 +431,65 @@ void DesenhaMesa(float x, float y, float z)
     glPopMatrix();
 }
 
+void DesenhaLabirinto()
+{
+    for (size_t i = 0; i < mapa.size(); ++i)
+    {
+        for (size_t j = 0; j < mapa[i].size(); ++j)
+        {
+            float x = j * 1.0; // Tamanho da célula em metros
+            float z = i * 1.0;
+
+            switch (mapa[i][j])
+            {
+            case CORRIDOR:
+                DesenhaPiso(x, 0, z);
+                break;
+            case WALL:
+                DesenhaPiso(x, 0, z);
+                if (rotacaoMapa[i][j])
+                    DesenhaParede(x, 0, z, false);
+                else
+                    DesenhaParede(x, 0, z, true); // Sem rotação
+                break;
+            case WINDOW:
+                DesenhaPiso(x, 0, z);
+                if (rotacaoMapa[i][j])
+                    DesenhaJanela(x, 0, z, false);
+                else
+                    DesenhaJanela(x, 0, z, true);
+                break;
+            case DOOR:
+                DesenhaPiso(x, 0, z);
+                if (rotacaoMapa[i][j])
+                    DesenhaPorta(x, 0, z, false);
+                else
+                    DesenhaPorta(x, 0, z, true);
+                break;
+            case PLAYER_START:
+                mapa[i][j] = CORRIDOR;
+                DesenhaPiso(x, 0, z);
+                jogador.x = x;
+                jogador.y = 0;
+                jogador.z = z;
+                break;
+            case GAS:
+                DesenhaPiso(x, 0, z);
+                DesenhaCombustivel(x, 0, z);
+                break;
+            case CHAIR:
+                DesenhaPiso(x, 0, z);
+                DesenhaCadeira(x, 0, z);
+                break;
+            case TABLE:
+                DesenhaPiso(x, 0, z);
+                DesenhaMesa(x, 0, z);
+                break;
+            }
+        }
+    }
+}
+
 void Setup2DProjection()
 {
     glMatrixMode(GL_PROJECTION);
@@ -445,7 +504,7 @@ void DesenhaTelaInicial()
     glClear(GL_COLOR_BUFFER_BIT);
 
     defineCor(DarkPurple);
-    glRasterPos2f(-10, 20);
+    glRasterPos2f(-15, 20);
     string texto = "Press SPACE to start";
     for (const char &c : texto)
     {
@@ -458,15 +517,14 @@ void DesenhaTelaFinal()
     glClear(GL_COLOR_BUFFER_BIT);
 
     defineCor(DarkPurple);
-    glRasterPos2f(-35, 20);
+    glRasterPos2f(-10, 20);
     string texto1 = "GAME OVER";
     for (const char &c : texto1)
     {
         glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, c);
     }
- 
-    defineCor(DarkPurple);
-    glRasterPos2f(-22, -10);
+
+    glRasterPos2f(-8, 0);
     string texto2 = "Press R to restart";
     for (const char &c : texto2)
     {
@@ -485,7 +543,6 @@ void DesenhaTelaVitoria()
     {
         glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, c);
     }
-    // DesenhaDisparador();
 }
 
 // Função para inicializar as posições dos combustiveis
@@ -527,7 +584,7 @@ void InicializaPosicoesInimigos(int quantidade)
 void Restart()
 {
     mapa.clear();
-    rotacaoParede.clear();
+    rotacaoMapa.clear();
     andando = false;
     jogadorRotacao = 0.0; // Ângulo de rotação do jogador em graus
     jogadorVetorRotacao = 0.0;
@@ -553,63 +610,10 @@ void Restart()
     AccumDeltaT = 0;
 
     // chamada de alguns metodos novamente
-    LeMapa("mapa.txt");
+    LeMapa("mapaOficial.txt");
 
     InicializaPosicoesCombustiveis(nroCombustiveis);
     InicializaPosicoesInimigos(nroInimigos);
-}
-
-void DesenhaLabirinto()
-{
-    for (size_t i = 0; i < mapa.size(); ++i)
-    {
-        for (size_t j = 0; j < mapa[i].size(); ++j)
-        {
-            float x = j * 1.0; // Tamanho da célula em metros
-            float z = i * 1.0;
-
-            switch (mapa[i][j])
-            {
-            case CORRIDOR:
-                DesenhaPiso(x, 0, z);
-                break;
-            case WALL:
-                DesenhaPiso(x, 0, z);
-                if (rotacaoParede[i][j])
-                    DesenhaParede(x, 0, z, false);
-                else
-                    DesenhaParede(x, 0, z, true); // Sem rotação
-                break;
-            case WINDOW:
-                DesenhaPiso(x, 0, z);
-                DesenhaJanela(x, 0, z);
-                break;
-            case DOOR:
-                DesenhaPiso(x, 0, z);
-                DesenhaPorta(x, 0, z);
-                break;
-            case PLAYER_START:
-                mapa[i][j] = CORRIDOR;
-                DesenhaPiso(x, 0, z);
-                jogador.x = x;
-                jogador.y = 0;
-                jogador.z = z;
-                break;
-            case GAS:
-                DesenhaPiso(x, 0, z);
-                DesenhaCombustivel(x, 0, z);
-                break;
-            case CHAIR:
-                DesenhaPiso(x, 0, z);
-                DesenhaCadeira(x, 0, z);
-                break;
-            case TABLE:
-                DesenhaPiso(x, 0, z);
-                DesenhaMesa(x, 0, z);
-                break;
-            }
-        }
-    }
 }
 
 void ColidiuComGas()
@@ -649,7 +653,7 @@ void ColidiuComInimigo(int inimigoIndex)
     if (energia > 0)
     {
         // Reduz a energia do jogador (exemplo)
-        energia -= 10; // Ajuste conforme necessário
+        // energia -= 10; // Ajuste conforme necessário
     }
     else
     {
@@ -744,49 +748,55 @@ void DesenhaJogador()
 {
     glPushMatrix();
     glTranslatef(jogador.x, jogador.y, jogador.z);
-    glRotatef(jogadorVetorRotacao, 0.0, 1.0, 0.0); // Aplica a rotação do jogador
+    glRotatef(jogadorVetorRotacao + 90.0, 0.0, 1.0, 0.0); // Aplica a rotação do jogador
 
-    // Cabeça do Steve (azul claro)
-    glColor3f(0.56f, 0.77f, 0.95f); // Cor azul claro para a cabeça
+    // Cabeça do Steve (pele)
+    glColor3f(0.87f, 0.72f, 0.53f); // Cor da pele para a cabeça
     glPushMatrix();
-    glTranslatef(0.0f, 1.8f, 0.0f); // Translada para a altura da cabeça
-    glutSolidCube(0.6);             // Desenha a cabeça como um cubo
+    glTranslatef(0.0f, 1.5f, 0.0f); // Translada para a altura da cabeça
+    glScalef(0.5f, 0.5f, 0.5f);     // Ajusta a escala da cabeça
+    glutSolidCube(1.0);             // Desenha a cabeça como um cubo
     glPopMatrix();
 
-    // Corpo do Steve (azul escuro)
-    glColor3f(0.14f, 0.42f, 0.8f); // Cor azul escuro para o corpo
+    // Corpo do Steve (camiseta azul)
+    glColor3f(0.14f, 0.42f, 0.8f); // Cor azul para a camiseta
     glPushMatrix();
     glTranslatef(0.0f, 0.8f, 0.0f); // Translada para a altura do corpo
-    glScalef(0.3f, 1.0f, 0.5f);     // Ajusta a escala do corpo
+    glScalef(0.5f, 0.7f, 0.2f);     // Ajusta a escala do corpo
     glutSolidCube(1.0);             // Desenha o corpo como um cubo
     glPopMatrix();
 
-    // Braços do Steve (azul escuro)
-    glColor3f(0.14f, 0.42f, 0.8f); // Cor azul escuro para os braços
+    // Braços do Steve (camiseta azul e pele)
+    // Braço esquerdo
+    glColor3f(0.14f, 0.42f, 0.8f); // Cor azul para a camiseta
     glPushMatrix();
-    glTranslatef(0.0f, 1.2f, -0.4f); // Translada para a posição do braço esquerdo
-    glScalef(0.2f, 1.0f, 0.2f);      // Ajusta a escala do braço
-    glutSolidCube(1.0);              // Desenha o braço esquerdo como um cubo
+    glTranslatef(-0.45f, 0.8f, 0.0f); // Translada para a posição do braço esquerdo
+    glScalef(0.15f, 0.7f, 0.2f);      // Ajusta a escala do braço
+    glutSolidCube(1.0);               // Desenha o braço esquerdo como um cubo
     glPopMatrix();
 
+    // Braço direito
+    glColor3f(0.14f, 0.42f, 0.8f); // Cor azul para a camiseta
     glPushMatrix();
-    glTranslatef(0.0f, 1.2f, 0.4f); // Translada para a posição do braço direito
-    glScalef(0.2f, 1.0f, 0.2f);     // Ajusta a escala do braço
-    glutSolidCube(1.0);             // Desenha o braço direito como um cubo
+    glTranslatef(0.45f, 0.8f, 0.0f); // Translada para a posição do braço direito
+    glScalef(0.15f, 0.7f, 0.2f);     // Ajusta a escala do braço
+    glutSolidCube(1.0);              // Desenha o braço direito como um cubo
     glPopMatrix();
 
-    // Pernas do Steve (azul escuro)
-    glColor3f(0.14f, 0.42f, 0.8f); // Cor azul escuro para as pernas
+    // Pernas do Steve (calça azul escuro)
+    glColor3f(0.0f, 0.0f, 0.5f); // Cor azul escuro para a calça
+    // Perna esquerda
     glPushMatrix();
-    glTranslatef(0.0f, 0.3f, -0.2f); // Translada para a posição da perna esquerda
-    glScalef(0.2f, 0.8f, 0.2f);      // Ajusta a escala da perna
-    glutSolidCube(1.0);              // Desenha a perna esquerda como um cubo
+    glTranslatef(-0.15f, 0.3f, 0.0f); // Translada para a posição da perna esquerda
+    glScalef(0.2f, 0.7f, 0.2f);       // Ajusta a escala da perna
+    glutSolidCube(1.0);               // Desenha a perna esquerda como um cubo
     glPopMatrix();
 
+    // Perna direita
     glPushMatrix();
-    glTranslatef(0.0f, 0.3f, 0.2f); // Translada para a posição da perna direita
-    glScalef(0.2f, 0.8f, 0.2f);     // Ajusta a escala da perna
-    glutSolidCube(1.0);             // Desenha a perna direita como um cubo
+    glTranslatef(0.15f, 0.3f, 0.0f); // Translada para a posição da perna direita
+    glScalef(0.2f, 0.7f, 0.2f);      // Ajusta a escala da perna
+    glutSolidCube(1.0);              // Desenha a perna direita como um cubo
     glPopMatrix();
 
     glPopMatrix(); // Restaura a matriz de transformação anterior
@@ -871,31 +881,40 @@ void MygluPerspective(float fieldOfView, float aspect, float zNear, float zFar)
 
 void PosicUser()
 {
-    // Define os par�metros da proje��o Perspectiva
+    // Define os parâmetros da projeção Perspectiva
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    // Define o volume de visualiza��o sempre a partir da posicao do
-    // observador
-
     MygluPerspective(60, AspectRatio, 0.1, 50); // Projecao perspectiva
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-
-    if (ModoDeVisao == 0) // Primeira pessoa
-    {
+    if (ModoDeVisao == 0)
+    {                                                                                              // Primeira pessoa
         gluLookAt(jogador.x, jogador.y + 1.5, jogador.z,                                           // Posiçao do observador
                   jogador.x + VetorAlvo.x, jogador.y + 1.5 + VetorAlvo.y, jogador.z + VetorAlvo.z, // Posiçao do alvo
                   0.0, 1.0, 0.0);
     }
-    else if (ModoDeVisao == 1) // Visão de cima
-    {
+    else if (ModoDeVisao == 2)
+    {                                       // Visão de cima
         gluLookAt(jogador.x, 20, jogador.z, // Posiçao do observador
                   jogador.x, 0, jogador.z,  // Posiçao do alvo
                   0.0, 0.0, -1.0);          // Up vector (direção para baixo)
+    }
+    else if (ModoDeVisao == 1)
+    { // Terceira pessoa (visão de trás)
+        // Definir a posição da câmera atrás do jogador
+        float distanciaAtras = 5.0f; // Distância atrás do jogador
+        float alturaCamera = 2.0f;   // Altura da câmera
+
+        // Calcula a posição da câmera atrás do jogador
+        float cameraX = jogador.x - VetorAlvo.x * distanciaAtras;
+        float cameraY = jogador.y + alturaCamera;
+        float cameraZ = jogador.z - VetorAlvo.z * distanciaAtras;
+
+        gluLookAt(cameraX, cameraY, cameraZ,             // Posiçao do observador
+                  jogador.x, jogador.y + 1.5, jogador.z, // Posiçao do alvo (cabeça do jogador)
+                  0.0, 1.0, 0.0);                        // Up vector
     }
 }
 
@@ -975,7 +994,14 @@ void keyboard(unsigned char key, int x, int y)
         }
         break;
     case 'v':
-        ModoDeVisao = !ModoDeVisao;
+        if (ModoDeVisao < 2)
+        {
+            ModoDeVisao++;
+        }
+        else
+        {
+            ModoDeVisao = 0;
+        }
         glutPostRedisplay();
         break;
     default:
@@ -1016,7 +1042,7 @@ int main(int argc, char **argv)
 
     init();
 
-    LeMapa("mapa.txt");
+    LeMapa("mapaOficial.txt");
     InicializaPosicoesCombustiveis(nroCombustiveis);
     InicializaPosicoesInimigos(nroInimigos);
 
