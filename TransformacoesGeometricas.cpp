@@ -28,7 +28,6 @@ using namespace std;
 #include "Ponto.h"
 #include "Inimigo.h"
 
-
 // Define constants for map elements
 #define CORRIDOR 0
 #define WALL 1
@@ -40,36 +39,43 @@ using namespace std;
 #define CHAIR 7
 #define TABLE 8
 
+// variaveis relativas ao mapa
 std::vector<std::vector<int>> mapa;
 std::vector<std::vector<bool>> rotacaoParede;
 
+// variaveis relativar ao jogador
 Ponto jogador;
-std::vector<Inimigo> inimigos;
 bool andando = false;
-
 double jogadorRotacao = 0.0; // Ângulo de rotação do jogador em graus
 double jogadorVetorRotacao = 0.0;
 double jogadorVelocidade = 0.5; // Velocidade de movimento do jogador
-double inimigoVelocidade = 1; // Velocidade de movimento do inimigo
-
-// energia que o jogador inicializa
 int energia = 100;
-// valor do reabastecimento que o jogador ganha ao passar por combustivel
-int valor_de_reabastecimento = 20;
-
-Temporizador T;
-double AccumDeltaT = 0;
-
-GLfloat AspectRatio, angulo = 0;
-
 // 0: Primeira pessoa, 1: Visão de cima
-int ModoDeVisao = 0; 
+int ModoDeVisao = 0;
 
+// variaveis relativas aos combustiveis
+int valor_de_reabastecimento = 20;
+int nroCombustiveis = 10;
+
+// variaveis relativas aos inimigos
+std::vector<Inimigo> inimigos;
+double inimigoVelocidade = 1; // Velocidade de movimento do inimigo
+int nroInimigos = 10;
+
+// variaveis relativas as telas
+bool telaInicial = true;
+bool telaVitoria = false;
+bool telaFinal = false;
+GLfloat AspectRatio, angulo = 0;
 double nFrames = 0;
 double TempoTotal = 0;
 Ponto OBS;
 Ponto ALVO;
 Ponto VetorAlvo;
+
+// variaveis relativas ao tempo
+Temporizador T;
+double AccumDeltaT = 0;
 
 void LeMapa(const std::string &filename);
 void DesenhaParede(float x, float y, float z, bool rotate);
@@ -195,14 +201,14 @@ void DesenhaCombustivel(float x, float y, float z)
     defineCor(OrangeRed);
     glTranslatef(x, y, z);
 
-    glTranslatef(0, altura/2 , 0); 
-    glScalef(altura, altura, altura); 
+    glTranslatef(0, altura / 2, 0);
+    glScalef(altura, altura, altura);
 
     glutSolidCube(1);
 
     // Adiciona borda preta
     glColor3f(0, 0, 0);
-    glScalef(1, 1, 1); 
+    glScalef(1, 1, 1);
     glutWireCube(1);
 
     glPopMatrix();
@@ -275,18 +281,20 @@ void DesenhaPorta(float x, float y, float z)
     glPopMatrix();
 }
 
-void DesenhaInimigos() {
-    for (const auto& inimigo : inimigos) {
+void DesenhaInimigos()
+{
+    for (const auto &inimigo : inimigos)
+    {
         glPushMatrix();
         glTranslatef(inimigo.Posicao.x, inimigo.Posicao.y, inimigo.Posicao.z); // Translada para a posição do inimigo
-        glRotatef(inimigo.Rotacao + 90.0f, 0.0f, 1.0f, 0.0f); // Rotaciona conforme a rotação do inimigo (eixo y)
+        glRotatef(inimigo.Rotacao + 90.0f, 0.0f, 1.0f, 0.0f);                  // Rotaciona conforme a rotação do inimigo (eixo y)
 
         // Corpo do Enderman
         glColor3f(0.0f, 0.0f, 0.0f); // Cor preta
         glPushMatrix();
         glTranslatef(0.0, 0.0, 0.0); // Translada para a altura do corpo
-        glScalef(0.2, 4.8, 0.2); // Escala para ajustar o tamanho
-        glutSolidCube(1); // Desenha o corpo sólido
+        glScalef(0.2, 4.8, 0.2);     // Escala para ajustar o tamanho
+        glutSolidCube(1);            // Desenha o corpo sólido
         glPopMatrix();
 
         // Cabeça do Enderman
@@ -294,38 +302,38 @@ void DesenhaInimigos() {
         glPushMatrix();
         glTranslatef(0, 2.4, 0); // Translada para a altura da cabeça
         glScalef(0.5, 0.5, 0.5); // Escala para ajustar o tamanho
-        glutSolidCube(1); // Desenha a cabeça sólida
+        glutSolidCube(1);        // Desenha a cabeça sólida
         glPopMatrix();
 
         // Olhos do Enderman (branco)
         glColor3f(1.0f, 1.0f, 1.0f); // Cor branca
         glPushMatrix();
         glTranslatef(-0.1, 2.4, 0.3); // Translada para a posição do olho esquerdo
-        glutSolidCube(0.1); // Desenha o olho esquerdo sólido
-        glTranslatef(0.2, 0, 0); // Translada para a posição do olho direito
-        glutSolidCube(0.1); // Desenha o olho direito sólido
+        glutSolidCube(0.1);           // Desenha o olho esquerdo sólido
+        glTranslatef(0.2, 0, 0);      // Translada para a posição do olho direito
+        glutSolidCube(0.1);           // Desenha o olho direito sólido
         glPopMatrix();
 
         // Braços do Enderman
         glColor3f(0.0f, 0.0f, 0.0f); // Cor preta
         glPushMatrix();
         glTranslatef(0.2, 1.5, 0.0); // Translada para a posição do braço esquerdo
-        glScalef(0.1, 1.0, 0.1); // Ajusta a escala do braço
-        glutSolidCube(1); // Desenha o braço sólido
+        glScalef(0.1, 1.0, 0.1);     // Ajusta a escala do braço
+        glutSolidCube(1);            // Desenha o braço sólido
         glPopMatrix();
 
         glPushMatrix();
         glTranslatef(-0.2, 1.5, 0.0); // Translada para a posição do braço direito
-        glScalef(0.1, 1.0, 0.1); // Ajusta a escala do braço
-        glutSolidCube(1); // Desenha o braço sólido
+        glScalef(0.1, 1.0, 0.1);      // Ajusta a escala do braço
+        glutSolidCube(1);             // Desenha o braço sólido
         glPopMatrix();
 
         glPopMatrix(); // Restaura a matriz de transformação anterior
     }
 }
 
-
-void DesenhaCadeira(float x, float y, float z) {
+void DesenhaCadeira(float x, float y, float z)
+{
     glPushMatrix();
     glTranslatef(x, y, z);
 
@@ -382,7 +390,8 @@ void DesenhaCadeira(float x, float y, float z) {
     glPopMatrix();
 }
 
-void DesenhaMesa(float x, float y, float z) {
+void DesenhaMesa(float x, float y, float z)
+{
     glPushMatrix();
     glTranslatef(x, y, z);
 
@@ -422,6 +431,63 @@ void DesenhaMesa(float x, float y, float z) {
     glPopMatrix();
 }
 
+void Setup2DProjection()
+{
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluOrtho2D(-50.0, 50.0, -50.0, 50.0); // Define a projeção ortogonal
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+}
+
+void DesenhaTelaInicial()
+{
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    defineCor(DarkPurple);
+    glRasterPos2f(-10, 20);
+    string texto = "Press SPACE to start";
+    for (const char &c : texto)
+    {
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, c);
+    }
+}
+
+void DesenhaTelaFinal()
+{
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    defineCor(DarkPurple);
+    glRasterPos2f(-35, 20);
+    string texto1 = "GAME OVER";
+    for (const char &c : texto1)
+    {
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, c);
+    }
+ 
+    defineCor(DarkPurple);
+    glRasterPos2f(-22, -10);
+    string texto2 = "Press R to restart";
+    for (const char &c : texto2)
+    {
+        glutBitmapCharacter(GLUT_BITMAP_HELVETICA_12, c);
+    }
+}
+
+void DesenhaTelaVitoria()
+{
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    defineCor(DarkPurple);
+    glRasterPos2f(-20, 20);
+    string texto = "You WON!";
+    for (const char &c : texto)
+    {
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, c);
+    }
+    // DesenhaDisparador();
+}
+
 // Função para inicializar as posições dos combustiveis
 void InicializaPosicoesCombustiveis(int quantidade)
 {
@@ -430,9 +496,10 @@ void InicializaPosicoesCombustiveis(int quantidade)
     for (int i = 0; i < quantidade; ++i)
     {
         int x, z;
-        do {
-            x = rand() % mapa[0].size(); 
-            z = rand() % mapa.size();   
+        do
+        {
+            x = rand() % mapa[0].size();
+            z = rand() % mapa.size();
         } while (mapa[z][x] != CORRIDOR);
 
         mapa[z][x] = GAS;
@@ -447,13 +514,49 @@ void InicializaPosicoesInimigos(int quantidade)
     for (int i = 0; i < quantidade; ++i)
     {
         int x, z;
-        do {
-            x = rand() % mapa[0].size(); 
-            z = rand() % mapa.size();   
+        do
+        {
+            x = rand() % mapa[0].size();
+            z = rand() % mapa.size();
         } while (mapa[z][x] != CORRIDOR);
 
         inimigos.emplace_back(0.0f, Ponto(x, 0.0f, z));
     }
+}
+
+void Restart()
+{
+    mapa.clear();
+    rotacaoParede.clear();
+    andando = false;
+    jogadorRotacao = 0.0; // Ângulo de rotação do jogador em graus
+    jogadorVetorRotacao = 0.0;
+    jogadorVelocidade = 0.5; // Velocidade de movimento do jogador
+    energia = 100;
+    // 0: Primeira pessoa, 1: Visão de cima
+    ModoDeVisao = 0;
+    // valor do reabastecimento que o jogador ganha ao passar por combustivel
+    valor_de_reabastecimento = 20;
+
+    // variaveis relativas aos inimigos
+    inimigoVelocidade = 1; // Velocidade de movimento do inimigo
+    inimigos.clear();
+
+    // variaveis relativas as telas
+    telaInicial = true;
+    telaVitoria = false;
+    telaFinal = false;
+    GLfloat AspectRatio, angulo = 0;
+    nFrames = 0;
+    TempoTotal = 0;
+
+    AccumDeltaT = 0;
+
+    // chamada de alguns metodos novamente
+    LeMapa("mapa.txt");
+
+    InicializaPosicoesCombustiveis(nroCombustiveis);
+    InicializaPosicoesInimigos(nroInimigos);
 }
 
 void DesenhaLabirinto()
@@ -513,16 +616,18 @@ void ColidiuComGas()
 {
     // Encontra uma posição aleatória válida para o combustível
     int novoX, novoZ;
-    do {
+    do
+    {
         novoX = rand() % mapa[0].size(); // Posição aleatória na largura do mapa
-        novoZ = rand() % mapa.size();   // Posição aleatória na altura do mapa
+        novoZ = rand() % mapa.size();    // Posição aleatória na altura do mapa
     } while (mapa[novoZ][novoX] != CORRIDOR); // Garante que a posição seja um corredor vazio
 
     // Move o combustível para a nova posição aleatória
     mapa[novoZ][novoX] = GAS;
 
     // Aumenta a energia do jogador
-    if (energia < 100){
+    if (energia < 100)
+    {
         energia += valor_de_reabastecimento;
     }
 }
@@ -531,17 +636,25 @@ void ColidiuComInimigo(int inimigoIndex)
 {
     // Encontra uma posição aleatória válida para o inimigo
     int novoX, novoZ;
-    do {
+    do
+    {
         novoX = rand() % mapa[0].size(); // Posição aleatória na largura do mapa
-        novoZ = rand() % mapa.size();   // Posição aleatória na altura do mapa
+        novoZ = rand() % mapa.size();    // Posição aleatória na altura do mapa
     } while (mapa[novoZ][novoX] != CORRIDOR); // Garante que a posição seja um corredor vazio
 
     // Atualiza a posição do inimigo no vetor
     inimigos[inimigoIndex].Posicao.x = novoX;
     inimigos[inimigoIndex].Posicao.z = novoZ;
 
-    // Reduz a energia do jogador (exemplo)
-    energia -= 10; // Ajuste conforme necessário
+    if (energia > 0)
+    {
+        // Reduz a energia do jogador (exemplo)
+        energia -= 10; // Ajuste conforme necessário
+    }
+    else
+    {
+        telaFinal = true;
+    }
 }
 
 void AtualizaPosicaoJogador()
@@ -557,14 +670,16 @@ void AtualizaPosicaoJogador()
         int mapaX = static_cast<int>(novoX + 0.5);
         int mapaZ = static_cast<int>(novoZ + 0.5);
 
-        if (mapa[mapaZ][mapaX] == CORRIDOR || mapa[mapaZ][mapaX] == GAS) 
+        if (mapa[mapaZ][mapaX] == CORRIDOR || mapa[mapaZ][mapaX] == GAS)
         {
-            if (mapa[mapaZ][mapaX] == GAS){
+            if (mapa[mapaZ][mapaX] == GAS)
+            {
                 ColidiuComGas();
             }
 
             // Remove o item colidido do mapa, se for GAS
-            if (mapa[mapaZ][mapaX] == GAS) {
+            if (mapa[mapaZ][mapaX] == GAS)
+            {
                 mapa[mapaZ][mapaX] = CORRIDOR;
             }
             jogador.x = novoX;
@@ -574,7 +689,7 @@ void AtualizaPosicaoJogador()
     // Atualizar o vetor alvo de acordo com a nova direção do jogador
     VetorAlvo.x = cos(rad);
     VetorAlvo.z = sin(rad);
-    VetorAlvo.y = 0; // Manter o alvo no plano 
+    VetorAlvo.y = 0; // Manter o alvo no plano
 }
 
 void ApontaInimigosJogador(Inimigo &i)
@@ -594,9 +709,11 @@ void ApontaInimigosJogador(Inimigo &i)
     i.VetorRotacao = anguloGraus;
 }
 
-void MoveInimigos() {
-    for (size_t i = 0; i < inimigos.size(); ++i) {
-        auto& inimigo = inimigos[i];
+void MoveInimigos()
+{
+    for (size_t i = 0; i < inimigos.size(); ++i)
+    {
+        auto &inimigo = inimigos[i];
 
         ApontaInimigosJogador(inimigo);
 
@@ -604,15 +721,18 @@ void MoveInimigos() {
         double rad = (inimigo.VetorRotacao) * M_PI / 180.0;
         double novoX = inimigo.Posicao.x + cos(rad) * inimigoVelocidade;
         double novoZ = inimigo.Posicao.z + sin(rad) * inimigoVelocidade;
-        
+
         int mapaX = static_cast<int>(novoX + 0.5);
         int mapaZ = static_cast<int>(novoZ + 0.5);
 
-        if (static_cast<int>(jogador.x + 0.5) == mapaX && static_cast<int>(jogador.z + 0.5) == mapaZ) {
+        if (static_cast<int>(jogador.x + 0.5) == mapaX && static_cast<int>(jogador.z + 0.5) == mapaZ)
+        {
             // Se colidiu com o jogador, chama a função de colisão
             ColidiuComInimigo(i);
             break;
-        } else if (mapa[mapaZ][mapaX] == CORRIDOR) {
+        }
+        else if (mapa[mapaZ][mapaX] == CORRIDOR)
+        {
             // Atualizar a posição do inimigo se não houver colisão com obstáculos
             inimigo.Posicao.x = novoX;
             inimigo.Posicao.z = novoZ;
@@ -630,63 +750,62 @@ void DesenhaJogador()
     glColor3f(0.56f, 0.77f, 0.95f); // Cor azul claro para a cabeça
     glPushMatrix();
     glTranslatef(0.0f, 1.8f, 0.0f); // Translada para a altura da cabeça
-    glutSolidCube(0.6); // Desenha a cabeça como um cubo
+    glutSolidCube(0.6);             // Desenha a cabeça como um cubo
     glPopMatrix();
 
     // Corpo do Steve (azul escuro)
     glColor3f(0.14f, 0.42f, 0.8f); // Cor azul escuro para o corpo
     glPushMatrix();
     glTranslatef(0.0f, 0.8f, 0.0f); // Translada para a altura do corpo
-    glScalef(0.3f, 1.0f, 0.5f); // Ajusta a escala do corpo
-    glutSolidCube(1.0); // Desenha o corpo como um cubo
+    glScalef(0.3f, 1.0f, 0.5f);     // Ajusta a escala do corpo
+    glutSolidCube(1.0);             // Desenha o corpo como um cubo
     glPopMatrix();
 
     // Braços do Steve (azul escuro)
     glColor3f(0.14f, 0.42f, 0.8f); // Cor azul escuro para os braços
     glPushMatrix();
     glTranslatef(0.0f, 1.2f, -0.4f); // Translada para a posição do braço esquerdo
-    glScalef(0.2f, 1.0f, 0.2f); // Ajusta a escala do braço
-    glutSolidCube(1.0); // Desenha o braço esquerdo como um cubo
+    glScalef(0.2f, 1.0f, 0.2f);      // Ajusta a escala do braço
+    glutSolidCube(1.0);              // Desenha o braço esquerdo como um cubo
     glPopMatrix();
 
     glPushMatrix();
     glTranslatef(0.0f, 1.2f, 0.4f); // Translada para a posição do braço direito
-    glScalef(0.2f, 1.0f, 0.2f); // Ajusta a escala do braço
-    glutSolidCube(1.0); // Desenha o braço direito como um cubo
+    glScalef(0.2f, 1.0f, 0.2f);     // Ajusta a escala do braço
+    glutSolidCube(1.0);             // Desenha o braço direito como um cubo
     glPopMatrix();
 
     // Pernas do Steve (azul escuro)
     glColor3f(0.14f, 0.42f, 0.8f); // Cor azul escuro para as pernas
     glPushMatrix();
     glTranslatef(0.0f, 0.3f, -0.2f); // Translada para a posição da perna esquerda
-    glScalef(0.2f, 0.8f, 0.2f); // Ajusta a escala da perna
-    glutSolidCube(1.0); // Desenha a perna esquerda como um cubo
+    glScalef(0.2f, 0.8f, 0.2f);      // Ajusta a escala da perna
+    glutSolidCube(1.0);              // Desenha a perna esquerda como um cubo
     glPopMatrix();
 
     glPushMatrix();
     glTranslatef(0.0f, 0.3f, 0.2f); // Translada para a posição da perna direita
-    glScalef(0.2f, 0.8f, 0.2f); // Ajusta a escala da perna
-    glutSolidCube(1.0); // Desenha a perna direita como um cubo
+    glScalef(0.2f, 0.8f, 0.2f);     // Ajusta a escala da perna
+    glutSolidCube(1.0);             // Desenha a perna direita como um cubo
     glPopMatrix();
 
     glPopMatrix(); // Restaura a matriz de transformação anterior
 }
-
 
 void init(void)
 {
     glClearColor(1.0f, 1.0f, 0.0f, 1.0f); // Fundo de tela preto
 
     glEnable(GL_DEPTH_TEST); // Habilita o teste de profundidade
-    glClearDepth(1.0);        // Limpa o valor do Z-buffer para o valor máximo
-    glDepthFunc(GL_LESS);     // Função de teste de profundidade
-    glEnable(GL_CULL_FACE);   // Habilita o culling de faces
-    glEnable(GL_NORMALIZE);   // Normaliza normais para cálculos corretos de iluminação
-    glShadeModel(GL_FLAT);    // Modelo de sombreamento flat para um efeito mais simples
+    glClearDepth(1.0);       // Limpa o valor do Z-buffer para o valor máximo
+    glDepthFunc(GL_LESS);    // Função de teste de profundidade
+    glEnable(GL_CULL_FACE);  // Habilita o culling de faces
+    glEnable(GL_NORMALIZE);  // Normaliza normais para cálculos corretos de iluminação
+    glShadeModel(GL_FLAT);   // Modelo de sombreamento flat para um efeito mais simples
 
     glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    
+
     OBS = Ponto(0, 5, 10);
     ALVO = Ponto(0, 0, 0);
     VetorAlvo = ALVO - OBS;
@@ -736,7 +855,6 @@ void DefineLuz(void)
     glMateriali(GL_FRONT, GL_SHININESS, 128);
 }
 
-
 void MygluPerspective(float fieldOfView, float aspect, float zNear, float zFar)
 {
     // https://stackoverflow.com/questions/2417697/gluperspective-was-removed-in-opengl-3-1-any-replacements/2417756#2417756
@@ -753,7 +871,7 @@ void MygluPerspective(float fieldOfView, float aspect, float zNear, float zFar)
 
 void PosicUser()
 {
-     // Define os par�metros da proje��o Perspectiva
+    // Define os par�metros da proje��o Perspectiva
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     // Define o volume de visualiza��o sempre a partir da posicao do
@@ -767,9 +885,9 @@ void PosicUser()
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-     if (ModoDeVisao == 0) // Primeira pessoa
+    if (ModoDeVisao == 0) // Primeira pessoa
     {
-        gluLookAt(jogador.x, jogador.y + 1.5, jogador.z, // Posiçao do observador
+        gluLookAt(jogador.x, jogador.y + 1.5, jogador.z,                                           // Posiçao do observador
                   jogador.x + VetorAlvo.x, jogador.y + 1.5 + VetorAlvo.y, jogador.z + VetorAlvo.z, // Posiçao do alvo
                   0.0, 1.0, 0.0);
     }
@@ -799,15 +917,37 @@ void reshape(int w, int h)
 void display(void)
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    DefineLuz();
-    PosicUser();
-
     glMatrixMode(GL_MODELVIEW);
-    DesenhaLabirinto();
-    DesenhaJogador();
-    DesenhaInimigos();
 
+    if (telaInicial)
+    {
+        Setup2DProjection();
+        DesenhaTelaInicial();
+    }
+    else
+    {
+        if (telaVitoria)
+        {
+            Setup2DProjection();
+            DesenhaTelaVitoria();
+        }
+        else
+        {
+            if (telaFinal)
+            {
+                Setup2DProjection();
+                DesenhaTelaFinal();
+            }
+            else
+            {
+                DefineLuz();
+                PosicUser();
+                DesenhaLabirinto();
+                DesenhaJogador();
+                DesenhaInimigos();
+            }
+        }
+    }
     glutSwapBuffers();
 }
 
@@ -819,7 +959,20 @@ void keyboard(unsigned char key, int x, int y)
         exit(0); // a tecla ESC for pressionada
         break;
     case ' ':
-        andando = !andando;
+        if (telaInicial)
+        {
+            telaInicial = false;
+        }
+        else
+        {
+            andando = !andando;
+        }
+        break;
+    case 'r':
+        if (telaFinal)
+        {
+            Restart();
+        }
         break;
     case 'v':
         ModoDeVisao = !ModoDeVisao;
@@ -863,10 +1016,9 @@ int main(int argc, char **argv)
 
     init();
 
-    LeMapa("mapaOficial.txt");
-    InicializaPosicoesCombustiveis(10);
-    InicializaPosicoesInimigos(10);
-    
+    LeMapa("mapa.txt");
+    InicializaPosicoesCombustiveis(nroCombustiveis);
+    InicializaPosicoesInimigos(nroInimigos);
 
     glutDisplayFunc(display);
     glutReshapeFunc(reshape);
