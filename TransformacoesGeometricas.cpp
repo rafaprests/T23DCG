@@ -669,8 +669,8 @@ void ColidiuComInimigo(int inimigoIndex)
     int novoX, novoZ;
     do
     {
-        novoX = rand() % mapa[0].size(); // Posição aleatória na largura do mapa
-        novoZ = rand() % mapa.size();    // Posição aleatória na altura do mapa
+        novoX = rand() % mapa[0].size(); 
+        novoZ = rand() % mapa.size();  
     } while (mapa[novoZ][novoX] != CORRIDOR); // Garante que a posição seja um corredor vazio
 
     // Atualiza a posição do inimigo no vetor
@@ -679,8 +679,7 @@ void ColidiuComInimigo(int inimigoIndex)
 
     if (energia > 0)
     {
-        // Reduz a energia do jogador (exemplo)
-        // energia -= 10; // Ajuste conforme necessário
+        energia -= 5; 
     }
     else
     {
