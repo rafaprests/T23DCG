@@ -88,6 +88,8 @@ void LeMapa(const std::string &filename)
     }
 
     std::string line;
+    int linhaIndex = 0; // Para rastrear a linha atual
+
     while (getline(file, line))
     {
         std::vector<int> row;
@@ -95,6 +97,8 @@ void LeMapa(const std::string &filename)
 
         std::stringstream ss(line);
         int value;
+        int colunaIndex = 0; // Para rastrear a coluna atual
+
         while (ss >> value)
         {
             row.push_back(value);
@@ -109,15 +113,28 @@ void LeMapa(const std::string &filename)
                 else if (!rotRow.empty() && rotRow.back())
                     rotate = true;
             }
+            else if (value == CHAIR)
+            {
+                // Verifica se há uma mesa na célula diretamente acima
+                if (linhaIndex > 0 && mapa[linhaIndex - 1][colunaIndex] == TABLE)
+                {
+                    rotate = true;
+                }
+            }
 
             rotRow.push_back(rotate);
 
             if (ss.peek() == ',')
                 ss.ignore();
+
+            colunaIndex++;
         }
+
         mapa.push_back(row);
         rotacaoMapa.push_back(rotRow); // Armazena a linha de rotação do mapa
+        linhaIndex++;
     }
+
     file.close();
 
     // Exibe o mapa lido para verificação
@@ -332,10 +349,15 @@ void DesenhaInimigos()
     }
 }
 
-void DesenhaCadeira(float x, float y, float z)
+void DesenhaCadeira(float x, float y, float z, bool rotate)
 {
     glPushMatrix();
     glTranslatef(x, y, z);
+    
+    if (rotate)
+    {
+        glRotatef(180, 0, 1, 0); // Aplica a rotação a toda a cadeira
+    }
 
     float alturaAssento = 0.6;
     float espessuraAssento = 0.05;
@@ -479,7 +501,12 @@ void DesenhaLabirinto()
                 break;
             case CHAIR:
                 DesenhaPiso(x, 0, z);
-                DesenhaCadeira(x, 0, z);
+                if(rotacaoMapa[i][j]){
+                    DesenhaCadeira(x, 0, z, true);
+                }
+                else{
+                    DesenhaCadeira(x, 0, z, false);
+                }
                 break;
             case TABLE:
                 DesenhaPiso(x, 0, z);
@@ -713,6 +740,37 @@ void ApontaInimigosJogador(Inimigo &i)
     i.VetorRotacao = anguloGraus;
 }
 
+// void MoveInimigos()
+// {
+//     for (size_t i = 0; i < inimigos.size(); ++i)
+//     {
+//         auto &inimigo = inimigos[i];
+
+//         ApontaInimigosJogador(inimigo);
+
+//         // Calcula a nova posicao do inimigo baseado na sua rotacao e velocidade
+//         double rad = (inimigo.VetorRotacao) * M_PI / 180.0;
+//         double novoX = inimigo.Posicao.x + cos(rad) * inimigoVelocidade;
+//         double novoZ = inimigo.Posicao.z + sin(rad) * inimigoVelocidade;
+
+//         int mapaX = static_cast<int>(novoX + 0.5);
+//         int mapaZ = static_cast<int>(novoZ + 0.5);
+
+//         if (static_cast<int>(jogador.x + 0.5) == mapaX && static_cast<int>(jogador.z + 0.5) == mapaZ)
+//         {
+//             // Se colidiu com o jogador, chama a função de colisão
+//             ColidiuComInimigo(i);
+//             break;
+//         }
+//         else if (mapa[mapaZ][mapaX] == CORRIDOR)
+//         {
+//             // Atualizar a posição do inimigo se não houver colisão com obstáculos
+//             inimigo.Posicao.x = novoX;
+//             inimigo.Posicao.z = novoZ;
+//         }
+//     }
+// }
+
 void MoveInimigos()
 {
     for (size_t i = 0; i < inimigos.size(); ++i)
@@ -740,6 +798,64 @@ void MoveInimigos()
             // Atualizar a posição do inimigo se não houver colisão com obstáculos
             inimigo.Posicao.x = novoX;
             inimigo.Posicao.z = novoZ;
+        }
+        else
+        {
+            // Tentar mover em uma direção alternativa com pequenos incrementos de ângulo
+            bool moved = false;
+            for (int angleOffset = 10; angleOffset <= 360; angleOffset += 10)
+            {
+                double newRad = (inimigo.VetorRotacao + angleOffset) * M_PI / 180.0;
+                double altX = inimigo.Posicao.x + cos(newRad) * inimigoVelocidade;
+                double altZ = inimigo.Posicao.z + sin(newRad) * inimigoVelocidade;
+
+                int altMapaX = static_cast<int>(altX + 0.5);
+                int altMapaZ = static_cast<int>(altZ + 0.5);
+
+                if (mapa[altMapaZ][altMapaX] == CORRIDOR)
+                {
+                    inimigo.Posicao.x = altX;
+                    inimigo.Posicao.z = altZ;
+                    inimigo.VetorRotacao += angleOffset;  // Atualizar a rotação do inimigo
+                    moved = true;
+                    break;
+                }
+
+                // Tentar direção oposta
+                newRad = (inimigo.VetorRotacao - angleOffset) * M_PI / 180.0;
+                altX = inimigo.Posicao.x + cos(newRad) * inimigoVelocidade;
+                altZ = inimigo.Posicao.z + sin(newRad) * inimigoVelocidade;
+
+                altMapaX = static_cast<int>(altX + 0.5);
+                altMapaZ = static_cast<int>(altZ + 0.5);
+
+                if (mapa[altMapaZ][altMapaX] == CORRIDOR)
+                {
+                    inimigo.Posicao.x = altX;
+                    inimigo.Posicao.z = altZ;
+                    inimigo.VetorRotacao -= angleOffset;  // Atualizar a rotação do inimigo
+                    moved = true;
+                    break;
+                }
+            }
+
+            if (!moved)
+            {
+                // Se não conseguiu se mover em nenhuma direção, tentar uma direção oposta
+                double reverseRad = (inimigo.VetorRotacao + 180) * M_PI / 180.0;
+                double revX = inimigo.Posicao.x + cos(reverseRad) * inimigoVelocidade;
+                double revZ = inimigo.Posicao.z + sin(reverseRad) * inimigoVelocidade;
+
+                int revMapaX = static_cast<int>(revX + 0.5);
+                int revMapaZ = static_cast<int>(revZ + 0.5);
+
+                if (mapa[revMapaZ][revMapaX] == CORRIDOR)
+                {
+                    inimigo.Posicao.x = revX;
+                    inimigo.Posicao.z = revZ;
+                    inimigo.VetorRotacao += 180;  // Atualizar a rotação do inimigo
+                }
+            }
         }
     }
 }
@@ -905,7 +1021,7 @@ void PosicUser()
     { // Terceira pessoa (visão de trás)
         // Definir a posição da câmera atrás do jogador
         float distanciaAtras = 5.0f; // Distância atrás do jogador
-        float alturaCamera = 2.0f;   // Altura da câmera
+        float alturaCamera = 4.0f;   // Altura da câmera
 
         // Calcula a posição da câmera atrás do jogador
         float cameraX = jogador.x - VetorAlvo.x * distanciaAtras;
@@ -1015,14 +1131,14 @@ void arrow_keys(int a_keys, int x, int y)
     switch (a_keys)
     {
     case GLUT_KEY_RIGHT:
-        jogadorRotacao += 5.0; // Rotaciona 5 graus para a esquerda
-        jogadorVetorRotacao -= 5.0;
+        jogadorRotacao += 8.0; // Rotaciona 5 graus para a esquerda
+        jogadorVetorRotacao -= 8.0;
         if (jogadorRotacao >= 360.0)
             jogadorRotacao -= 360.0;
         break;
     case GLUT_KEY_LEFT:
-        jogadorRotacao -= 5.0; // Rotaciona 5 graus para a direita
-        jogadorVetorRotacao += 5.0;
+        jogadorRotacao -= 8.0; // Rotaciona 5 graus para a direita
+        jogadorVetorRotacao += 8.0;
         if (jogadorRotacao < 0.0)
             jogadorRotacao += 360.0;
         break;
