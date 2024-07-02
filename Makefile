@@ -5,7 +5,7 @@ PROG = BasicoOpenGL
 #FONTES = Ponto.cpp Poligono.cpp Temporizador.cpp ListaDeCoresRGB.cpp ProgramaBasicoOpenGL.cpp 
 #FONTES = ExemploDeManipulacaoDeImagens.cpp ImageClass.cpp Temporizador.cpp SOIL/SOIL.cpp SOIL/image_DXT.cpp SOIL/image_helper.cpp SOIL/stb_image_aug.cpp
 
-FONTES = Ponto.cpp Temporizador.cpp ListaDeCoresRGB.cpp TransformacoesGeometricas.cpp 
+FONTES = Poligono.cpp Inimigo.cpp Ponto.cpp Temporizador.cpp ListaDeCoresRGB.cpp TransformacoesGeometricas.cpp 
 
 OBJETOS = $(FONTES:.cpp=.o)
 CPPFLAGS = -g -O3 -DGL_SILENCE_DEPRECATION -Wno-write-strings -Wno-narrowing -Wno-stringop-overflow # -Wall -g  # Todas as warnings, infos de debug

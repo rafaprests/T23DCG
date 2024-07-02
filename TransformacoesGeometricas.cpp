@@ -20,13 +20,14 @@ using namespace std;
 #endif
 
 #ifdef __linux__
-#include <glut.h>
+#include <GL/glut.h>
 #endif
 
 #include "Temporizador.h"
 #include "ListaDeCoresRGB.h"
 #include "Ponto.h"
 #include "Inimigo.h"
+#include "Poligono.h"
 
 // Define constants for map elements
 #define CORRIDOR 0
@@ -60,7 +61,10 @@ int nroCombustiveis = 10;
 // variaveis relativas aos inimigos
 std::vector<Inimigo> inimigos;
 double inimigoVelocidade = 1; // Velocidade de movimento do inimigo
-int nroInimigos = 10;
+int nroInimigos = 2;
+
+//variaveis relativas aos objetos
+Poligono Mesa, Cadeira, Combustivel;
 
 // variaveis relativas as telas
 bool telaInicial = true;
@@ -76,6 +80,13 @@ Ponto VetorAlvo;
 // variaveis relativas ao tempo
 Temporizador T;
 double AccumDeltaT = 0;
+
+void CarregaModelos()
+{
+    // Mesa.LePoligono("Mesa.txt");
+    // Cadeira.LePoligono("Cadeira.txt");
+    Combustivel.LePoligono("Combustivel.txt");
+}
 
 // Função para ler o mapa do arquivo
 void LeMapa(const std::string &filename)
@@ -204,6 +215,16 @@ void DesenhaCombustivel(float x, float y, float z)
 
     glPopMatrix();
 }
+
+// void DesenhaCombustivel(float x, float y, float z)
+// {
+//     glPushMatrix();
+//     defineCor(OrangeRed);
+//     glTranslatef(x, y, z);
+//     Combustivel.desenhaPoligono();
+//     Combustivel.pintaPoligono();
+//     glPopMatrix();
+// }
 
 void DesenhaJanela(float x, float y, float z, bool rotate)
 {
@@ -911,6 +932,7 @@ void DesenhaJogador()
 
 void init(void)
 {
+    CarregaModelos();
     glClearColor(1.0f, 1.0f, 0.0f, 1.0f); // Fundo de tela preto
 
     glEnable(GL_DEPTH_TEST); // Habilita o teste de profundidade
