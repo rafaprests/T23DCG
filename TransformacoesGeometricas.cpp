@@ -1003,10 +1003,22 @@ void PosicUser()
                   0.0, 1.0, 0.0);
     }
     else if (ModoDeVisao == 2)
-    {                                       // Visão de cima
-        gluLookAt(jogador.x, 20, jogador.z, // Posiçao do observador
-                  jogador.x, 0, jogador.z,  // Posiçao do alvo
-                  0.0, 0.0, -1.0);          // Up vector (direção para baixo)
+    {          
+        if(jogador.x < 30){
+            gluLookAt(15, 30, 10,
+                15, 0, 10,
+                0.0, 0.0, -1.0);
+        }   
+        else if(jogador.x > 30 && jogador.x < 60){
+            gluLookAt(45, 30, 10, // Posiçao do observador
+                45, 0, 10,  // Posiçao do alvo
+                0.0, 0.0, -1.0);          // Up vector (direção para baixo)
+        }   
+        else if(jogador.x > 60){
+            gluLookAt(85, 30, 10,
+                85, 0, 10,
+                0.0, 0.0, -1.0);
+        }                      
     }
     else if (ModoDeVisao == 1)
     { // Terceira pessoa (visão de trás)
