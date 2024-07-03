@@ -148,26 +148,6 @@ void LeMapa(const std::string &filename)
     }
 }
 
-void DesenhaParede(float x, float y, float z, bool rotate)
-{
-    float alturaParede = 2.7;
-    glPushMatrix();
-    defineCor(Copper);
-    glTranslatef(x, y, z);
-    glTranslatef(0, alturaParede / 2, 0);
-    if (rotate)
-        glRotatef(90, 0, 1, 0);
-
-    glScalef(1, alturaParede, 0.25);
-    glutSolidCube(1);
-
-    // Adiciona borda preta
-    glColor3f(0, 0, 0);
-    glScalef(1, 1, 1);
-    glutWireCube(1);
-
-    glPopMatrix();
-}
 
 void DesenhaPiso(float x, float y, float z)
 {
@@ -205,6 +185,26 @@ void DesenhaCombustivel(float x, float y, float z)
     glPopMatrix();
 }
 
+void DesenhaParede(float x, float y, float z, bool rotate)
+{
+    float alturaParede = 2.7;
+    glPushMatrix();
+    defineCor(Copper);
+    glTranslatef(x, y, z);
+    glTranslatef(0, alturaParede / 2, 0);
+    if (rotate)
+        glRotatef(90, 0, 1, 0);
+
+    glScalef(1, alturaParede, 0.25);
+    glutSolidCube(1);
+
+    // Adiciona borda preta
+    glColor3f(0, 0, 0);
+    glScalef(1, 1, 1);
+    glutWireCube(1);
+
+    glPopMatrix();
+}
 void DesenhaJanela(float x, float y, float z, bool rotate)
 {
     float alturaParede = 2.7;
@@ -968,9 +968,9 @@ void PosicUser()
     glLoadIdentity();
 
     if (ModoDeVisao == 0)
-    {                                                                                              // Primeira pessoa
-        gluLookAt(jogador.x, jogador.y + 1.5, jogador.z,                                           // Posiçao do observador
-                  jogador.x + VetorAlvo.x, jogador.y + 1.5 + VetorAlvo.y, jogador.z + VetorAlvo.z, // Posiçao do alvo
+    {                                                                                             
+        gluLookAt(jogador.x, jogador.y + 1.5, jogador.z,                                          
+                  jogador.x + VetorAlvo.x, jogador.y + 1.5 + VetorAlvo.y, jogador.z + VetorAlvo.z,
                   0.0, 1.0, 0.0);
     }
     else if (ModoDeVisao == 2)
@@ -980,19 +980,18 @@ void PosicUser()
                   0.0, 0.0, -1.0);
     }
     else if (ModoDeVisao == 1)
-    { // Terceira pessoa (visão de trás)
-        // Definir a posição da câmera atrás do jogador
-        float distanciaAtras = 6.0f; // Distância atrás do jogador
-        float alturaCamera = 5.0f;   // Altura da câmera
+    { 
+        float distanciaAtras = 6.0f; 
+        float alturaCamera = 5.0f;   
 
         // Calcula a posição da câmera atrás do jogador
         float cameraX = jogador.x - VetorAlvo.x * distanciaAtras;
         float cameraY = jogador.y + alturaCamera;
         float cameraZ = jogador.z - VetorAlvo.z * distanciaAtras;
 
-        gluLookAt(cameraX, cameraY, cameraZ,             // Posiçao do observador
-                  jogador.x, jogador.y + 1.5, jogador.z, // Posiçao do alvo (cabeça do jogador)
-                  0.0, 1.0, 0.0);                        // Up vector
+        gluLookAt(cameraX, cameraY, cameraZ,             
+                  jogador.x, jogador.y + 1.5, jogador.z, 
+                  0.0, 1.0, 0.0);                        
     }
 }
 
